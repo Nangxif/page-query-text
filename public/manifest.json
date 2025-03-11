@@ -1,0 +1,15 @@
+{
+  "name": "文本检索",
+  "description": "这是一款全能的文本检索工具",
+  "version": "1.0",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["sidePanel"],
+  "side_panel": {
+    "default_path": "Sidebar.html",
+    "default_title": "打开侧边栏"
+  },
+  "icons": {}
+}
