@@ -1,58 +1,33 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 
-const textContentMap = new Map();
-/**
- * 获取当前页面每个可滚动的元素（页面上任何一个节点都有可能可以滚动）的滚动宽度和滚动高度，生成一个数组，数组的格式为
- * [{
- *  scrollWidth: number,
- *  scrollHeight: number,
- *  left: number,
- *  top: number,
- *  width: number,
- *  height: number,
- * }]
- */
-// function getScrollableElements() {
-//   const observer = new MutationObserver((mutations) => {
-//     console.log('mutations=', mutations);
-//     mutations.forEach((mutation) => {});
-//   });
-//   observer.observe(document.body, {
-//     childList: true,
-//     subtree: true,
-//   });
-// }
+const textContentMap = new Map() as Map<Text, string>;
 
-// 生成当前页面文本weakMap
+// 生成当前页面文本Map
 function generateTextMap() {
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.type === 'characterData') {
-        const target = mutation.target as Text;
-        textContentMap.set(target, target.textContent);
-      }
-    });
-  });
+  const observer = new MutationObserver(getAllText);
   observer.observe(document.body, {
     childList: true,
     subtree: true,
     characterData: true,
   });
-  // 获取body下面所有的节点，排除script节点
+  getAllText();
+}
+
+function getAllText() {
+  textContentMap.clear();
   const body = document.body;
-  const elements = body.querySelectorAll('*');
-  // WeakMap.prototype.set = function (key, value) {
-  //   // 上报最新的map
-  //   return WeakMap.prototype.set.call(this, key, value);
-  // };
+  const elements = body.querySelectorAll('*') as unknown as HTMLElement[];
+  recursionElementChildNodes(elements);
+}
+
+function recursionElementChildNodes(elements: HTMLElement[]) {
   elements.forEach((element) => {
-    if (
-      element.tagName !== 'SCRIPT' &&
-      Array.from(element?.childNodes).some((child) => child.nodeType === 3)
-    ) {
-      if (!!element?.textContent?.trim()) {
-        textContentMap.set(element, element.textContent);
-      }
+    if (element.nodeType === Node.TEXT_NODE && !!element.textContent) {
+      textContentMap.set(element as unknown as Text, element.textContent);
+    } else if (element?.childNodes?.length > 0) {
+      recursionElementChildNodes(
+        element?.childNodes as unknown as HTMLElement[],
+      );
     }
   });
 }
@@ -108,7 +83,7 @@ function insertInput() {
   input.style.marginBottom = '10px';
   input.style.color = 'black';
   // 绑定事件，当输入框内容变化时，调用search函数
-  input.oninput = search;
+  input.oninput = queryText;
 
   // 将输入框添加到内容区域
   content.appendChild(input);
@@ -202,24 +177,29 @@ function insertInput() {
   floatingBox.appendChild(content);
 
   // 将悬浮框添加到文档中
-  document.body.appendChild(floatingBox);
+  document.documentElement.appendChild(floatingBox);
 }
 
-function search(e: any) {
+function queryText(e: any) {
   const keyword = e.target.value;
   // 在下面这个map里面搜索出对应的keyword
-  const results: HTMLElement[] = [];
-  for (const key of textContentMap.keys()) {
-    const value = textContentMap.get(key);
+  const results: Text[] = [];
+  for (const textNode of textContentMap.keys()) {
+    const value = textContentMap.get(textNode);
     if (keyword && value && value.includes(keyword)) {
-      results.push(key);
+      results.push(textNode);
     }
   }
+  results?.[0]?.parentElement?.scrollIntoView();
   const positions = getTextPosition(keyword, results);
   renderTextHighlight(positions);
 }
 
-function getTextPosition(keyword: string, textNodes: HTMLElement[]) {
+// function hitTextSubscriber(textNodes: Text[]) {
+//   // const observer=new In
+// }
+
+function getTextPosition(keyword: string, textNodes: Text[]) {
   const textPositions: {
     top: number;
     left: number;
@@ -228,30 +208,24 @@ function getTextPosition(keyword: string, textNodes: HTMLElement[]) {
   }[] = [];
   // 遍历父节点的所有子节点
   textNodes.forEach((textNode) => {
-    const childNodes = textNode.childNodes;
-    childNodes.forEach((childNode) => {
-      if (childNode.nodeType === Node.TEXT_NODE) {
-        // 确保是文本节点
-        const range = document.createRange();
-        const text = childNode as Text;
-        const startIndex = text.textContent?.indexOf(keyword) || 0;
-        if (startIndex !== -1) {
-          range.setStart(childNode, startIndex); // 从文本节点的开始位置
-          range.setEnd(childNode, startIndex + keyword.length); // 到文本节点的结束位置
-        } else {
-          range.setStart(childNode, 0); // 从文本节点的开始位置
-          range.setEnd(childNode, text.length); // 到文本节点的结束位置
-        }
+    // 确保是文本节点
+    const range = document.createRange();
+    const startIndex = textNode.textContent?.indexOf(keyword) || 0;
+    if (startIndex !== -1) {
+      range.setStart(textNode, startIndex); // 从文本节点的开始位置
+      range.setEnd(textNode, startIndex + keyword.length); // 到文本节点的结束位置
+    } else {
+      range.setStart(textNode, 0); // 从文本节点的开始位置
+      range.setEnd(textNode, textNode.length); // 到文本节点的结束位置
+    }
 
-        // 获取范围的边界矩形
-        const rect = range.getBoundingClientRect();
-        textPositions.push({
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height,
-        });
-      }
+    // 获取范围的边界矩形
+    const rect = range.getBoundingClientRect();
+    textPositions.push({
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
     });
   });
 
@@ -280,7 +254,7 @@ function renderTextHighlight(
   newHighlightContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
   newHighlightContainer.style.zIndex = '1000';
   newHighlightContainer.style.pointerEvents = 'none';
-  document.body.appendChild(newHighlightContainer);
+  document.documentElement.appendChild(newHighlightContainer);
 
   positions.forEach((position) => {
     const highlight = document.createElement('div');
@@ -296,7 +270,6 @@ function renderTextHighlight(
 }
 
 window.addEventListener('load', () => {
-  // getScrollableElements();
   setTimeout(() => {
     generateTextMap();
   }, 1000);
