@@ -2,7 +2,8 @@
   "private": true,
   "author": "fangyankai <575981390@qq.com>",
   "scripts": {
-    "build": "max build",
+    "build": "max build && pnpm  build-scripts",
+    "build-scripts": "rollup -c config/rollup.config.mjs",
     "dev": "max dev",
     "format": "prettier --cache --write .",
     "postinstall": "max setup",
@@ -17,6 +18,8 @@
     "antd": "^5.4.0"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
     "@types/chrome": "^0.0.308",
     "@types/react": "^18.0.33",
     "@types/react-dom": "^18.0.11",
@@ -26,6 +29,10 @@
     "prettier": "^2.8.7",
     "prettier-plugin-organize-imports": "^3.2.2",
     "prettier-plugin-packagejson": "^2.4.3",
+    "rollup": "^4.35.0",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "^0.36.0",
     "typescript": "^5.0.3"
   }
 }

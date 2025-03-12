@@ -3,9 +3,12 @@
   "description": "这是一款全能的文本检索工具",
   "version": "1.0",
   "manifest_version": 3,
-  "background": {
-    "service_worker": "background.js"
-  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-scripts/index.js"]
+    }
+  ],
   "permissions": ["sidePanel"],
   "side_panel": {
     "default_path": "Sidebar.html",
