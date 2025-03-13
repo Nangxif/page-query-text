@@ -1,10 +1,14 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 
 const textContentMap = new Map() as Map<Text, string>;
+let keyword = '';
 
 // 生成当前页面文本Map
 function generateTextMap() {
-  const observer = new MutationObserver(getAllText);
+  const observer = new MutationObserver(() => {
+    getAllText();
+    queryText(keyword);
+  });
   observer.observe(document.body, {
     childList: true,
     subtree: true,
@@ -180,40 +184,101 @@ function insertInput() {
   document.documentElement.appendChild(floatingBox);
 }
 
+let subscriber: {
+  start: () => void;
+  stop: () => void;
+} | null = null;
+let observer: IntersectionObserver | null = null;
+const resultsMap = new Map<Text, boolean>();
 function queryText(e: any) {
-  const keyword = e.target.value;
+  subscriber?.stop();
+  subscriber = null;
+  observer?.disconnect();
+  observer = null;
+  resultsMap.clear();
+  keyword = typeof e === 'string' ? e : e.target.value;
   // 在下面这个map里面搜索出对应的keyword
-  const results: Text[] = [];
   for (const textNode of textContentMap.keys()) {
     const value = textContentMap.get(textNode);
     if (keyword && value && value.includes(keyword)) {
+      resultsMap.set(textNode, false);
+    }
+  }
+
+  // 监听results里面每个节点是否在可视区
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      entry?.target?.childNodes.forEach((child) => {
+        if (child?.nodeType === Node.TEXT_NODE) {
+          resultsMap.set(child as unknown as Text, entry.isIntersecting);
+        }
+      });
+    });
+  });
+  for (const textNode of resultsMap.keys()) {
+    observer!.observe(textNode.parentElement as HTMLElement);
+  }
+  const positions = getTextPosition(
+    filterVisibleTextNodes(resultsMap),
+    keyword,
+  );
+  renderTextHighlight(positions);
+  subscriber = hitTextSubscriber();
+}
+
+// 过滤出可见的文本节点，通过数组返回
+function filterVisibleTextNodes(resultsMap: Map<Text, boolean>) {
+  const results: Text[] = [];
+  for (const textNode of resultsMap.keys()) {
+    if (resultsMap.get(textNode)) {
       results.push(textNode);
     }
   }
-  results?.[0]?.parentElement?.scrollIntoView();
-  const positions = getTextPosition(keyword, results);
-  renderTextHighlight(positions);
+  return results;
 }
 
-// function hitTextSubscriber(textNodes: Text[]) {
-//   // const observer=new In
-// }
+function hitTextSubscriber() {
+  const subscriber = requestAnimationFrameLoop(() => {
+    const positions = getTextPosition(
+      filterVisibleTextNodes(resultsMap),
+      keyword,
+    );
+    renderTextHighlight(positions);
+  });
+  subscriber.start();
+  return subscriber;
+}
 
-function getTextPosition(keyword: string, textNodes: Text[]) {
+function requestAnimationFrameLoop(callback: () => void) {
+  let requestId: number;
+  function loop() {
+    requestId = requestAnimationFrame(loop);
+    callback();
+  }
+  return {
+    start: () => {
+      loop();
+    },
+    stop: () => {
+      cancelAnimationFrame(requestId);
+    },
+  };
+}
+
+function getTextPosition(textNodes: Text[], keyword: string) {
   const textPositions: {
     top: number;
     left: number;
     width: number;
     height: number;
   }[] = [];
-  // 遍历父节点的所有子节点
   textNodes.forEach((textNode) => {
     // 确保是文本节点
     const range = document.createRange();
     const startIndex = textNode.textContent?.indexOf(keyword) || 0;
-    if (startIndex !== -1) {
+    if (startIndex > -1) {
       range.setStart(textNode, startIndex); // 从文本节点的开始位置
-      range.setEnd(textNode, startIndex + keyword.length); // 到文本节点的结束位置
+      range.setEnd(textNode, startIndex + (keyword?.length || 0)); // 到文本节点的结束位置
     } else {
       range.setStart(textNode, 0); // 从文本节点的开始位置
       range.setEnd(textNode, textNode.length); // 到文本节点的结束位置
@@ -251,7 +316,6 @@ function renderTextHighlight(
   newHighlightContainer.style.left = '0';
   newHighlightContainer.style.width = '100%';
   newHighlightContainer.style.height = '100%';
-  newHighlightContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
   newHighlightContainer.style.zIndex = '1000';
   newHighlightContainer.style.pointerEvents = 'none';
   document.documentElement.appendChild(newHighlightContainer);
@@ -263,7 +327,7 @@ function renderTextHighlight(
     highlight.style.left = `${position.left}px`;
     highlight.style.width = `${position.width}px`;
     highlight.style.height = `${position.height}px`;
-    highlight.style.backgroundColor = 'red';
+    highlight.style.backgroundColor = 'yellow';
     highlight.style.opacity = '0.5';
     newHighlightContainer.appendChild(highlight);
   });
