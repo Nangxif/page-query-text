@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
+import CloseIcon from '../assets/images/close-icon.png';
 
 const textContentMap = new Map() as Map<Text, string>;
 let keyword = '';
@@ -40,57 +41,53 @@ function recursionElementChildNodes(elements: HTMLElement[]) {
 function insertInput() {
   // 创建悬浮框
   const floatingBox = document.createElement('div');
+  floatingBox.style.display = 'flex';
+  floatingBox.style.alignItems = 'center';
   floatingBox.style.position = 'fixed';
   floatingBox.style.top = '20px';
   floatingBox.style.right = '20px';
-  floatingBox.style.width = '300px';
-  floatingBox.style.backgroundColor = '#333'; // 深色背景
-  floatingBox.style.color = 'white';
-  floatingBox.style.borderRadius = '8px';
+  floatingBox.style.width = '600px';
+  floatingBox.style.padding = '6px 4px';
+  floatingBox.style.backgroundColor = 'rgb(32 32 32)'; // 深色背景
+  floatingBox.style.borderRadius = '4px';
   floatingBox.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.5)';
-  floatingBox.style.padding = '10px';
-  floatingBox.style.zIndex = '1000';
-
-  // 创建头部
-  const header = document.createElement('div');
-  header.style.display = 'flex';
-  header.style.justifyContent = 'flex-end';
-
-  // 创建关闭按钮
-  const closeButton = document.createElement('button');
-  closeButton.innerHTML = '✖';
-  closeButton.style.background = 'none';
-  closeButton.style.border = 'none';
-  closeButton.style.color = 'white';
-  closeButton.style.fontSize = '20px';
-  closeButton.style.cursor = 'pointer';
-  closeButton.onclick = () => {
-    floatingBox.style.display = 'none';
-  };
-
-  // 将关闭按钮添加到头部
-  header.appendChild(closeButton);
-  floatingBox.appendChild(header);
-
-  // 创建内容区域
-  const content = document.createElement('div');
-  content.style.marginTop = '10px';
+  floatingBox.style.zIndex = '1000000';
 
   // 创建输入框
   const input = document.createElement('input');
   input.type = 'text';
-  input.placeholder = '搜索...';
+  input.placeholder = '查找';
   input.style.width = '100%';
-  input.style.padding = '8px';
+  input.style.height = '26px';
   input.style.border = 'none';
-  input.style.borderRadius = '4px';
-  input.style.marginBottom = '10px';
-  input.style.color = 'black';
+  input.style.outline = 'none';
+  input.style.background = 'rgb(49 49 49)';
+  input.style.color = 'white';
+  input.style.fontSize = '14px';
+  input.style.padding = '0 10px';
+  input.style.marginRight = '8px';
   // 绑定事件，当输入框内容变化时，调用search函数
   input.oninput = queryText;
 
   // 将输入框添加到内容区域
-  content.appendChild(input);
+  floatingBox.appendChild(input);
+
+  // 创建关闭按钮
+  const closeButton = document.createElement('button');
+  closeButton.innerHTML = `<img src="${CloseIcon}" alt="close" />`;
+  closeButton.style.background = 'none';
+  closeButton.style.border = 'none';
+  closeButton.style.color = 'white';
+  closeButton.style.cursor = 'pointer';
+  closeButton.style.width = '20px';
+  closeButton.style.height = '20px';
+  closeButton.style.margin = '0 4px';
+
+  closeButton.onclick = () => {
+    floatingBox.style.display = 'none';
+  };
+
+  floatingBox.appendChild(closeButton);
 
   // 创建按钮区域
   const buttons = document.createElement('div');
@@ -133,7 +130,6 @@ function insertInput() {
   // 将按钮添加到按钮区域
   buttons.appendChild(aaButton);
   buttons.appendChild(abButton);
-  content.appendChild(buttons);
 
   // 创建导航区域
   const navigation = document.createElement('div');
@@ -175,10 +171,6 @@ function insertInput() {
   // 将导航按钮添加到导航区域
   navigation.appendChild(upButton);
   navigation.appendChild(downButton);
-  content.appendChild(navigation);
-
-  // 将内容区域添加到悬浮框
-  floatingBox.appendChild(content);
 
   // 将悬浮框添加到文档中
   document.documentElement.appendChild(floatingBox);
