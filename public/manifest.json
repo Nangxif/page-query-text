@@ -12,6 +12,12 @@
       "js": ["content-scripts/insert-script.js"]
     }
   ],
+  "web_accessible_resources": [
+    {
+      "matches": ["<all_urls>"],
+      "resources": ["content-scripts/floating-search-box.js"]
+    }
+  ],
   "permissions": ["sidePanel", "storage"],
   "side_panel": {
     "default_path": "Sidebar.html",
