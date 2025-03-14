@@ -1,5 +1,14 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import CloseIcon from '../assets/images/close-icon.png';
+import LowercaseIcon from '../assets/images/lowercase-icon.png';
+import NextIcon from '../assets/images/next-icon.png';
+import PrevIcon from '../assets/images/prev-icon.png';
+import UppercaseIcon from '../assets/images/uppercase-icon.png';
+
+const elementId = Date.now().toString();
+const searchResultId = `${elementId}-search-result`;
+const searchResultEmptyText = '无结果';
+let searchResultElement = null as HTMLElement | null;
 
 const textContentMap = new Map() as Map<Text, string>;
 let keyword = '';
@@ -37,8 +46,8 @@ function recursionElementChildNodes(elements: HTMLElement[]) {
   });
 }
 
-// 往页面插入一个输入框
-function insertInput() {
+// 往页面插入一个悬浮框
+function insertFloatBox() {
   // 创建悬浮框
   const floatingBox = document.createElement('div');
   floatingBox.style.display = 'flex';
@@ -46,7 +55,8 @@ function insertInput() {
   floatingBox.style.position = 'fixed';
   floatingBox.style.top = '20px';
   floatingBox.style.right = '20px';
-  floatingBox.style.width = '600px';
+  floatingBox.style.width = 'calc(100vw - 40px)';
+  floatingBox.style.maxWidth = '400px';
   floatingBox.style.padding = '6px 4px';
   floatingBox.style.backgroundColor = 'rgb(32 32 32)'; // 深色背景
   floatingBox.style.borderRadius = '4px';
@@ -54,123 +64,179 @@ function insertInput() {
   floatingBox.style.zIndex = '1000000';
 
   // 创建输入框
+  const inputBox = document.createElement('div');
+  inputBox.style.flex = '1';
+  inputBox.style.display = 'flex';
+  inputBox.style.alignItems = 'center';
+  inputBox.style.width = '100%';
+  inputBox.style.height = '26px';
+  inputBox.style.borderRadius = '4px';
+  inputBox.style.border = 'none';
+  inputBox.style.overflow = 'hidden';
+  inputBox.style.background = 'rgb(49 49 49)';
+  inputBox.style.marginRight = '12px';
+
   const input = document.createElement('input');
   input.type = 'text';
+  input.style.flex = '1';
   input.placeholder = '查找';
   input.style.width = '100%';
   input.style.height = '26px';
   input.style.border = 'none';
   input.style.outline = 'none';
-  input.style.background = 'rgb(49 49 49)';
   input.style.color = 'white';
   input.style.fontSize = '14px';
   input.style.padding = '0 10px';
-  input.style.marginRight = '8px';
+  input.style.background = 'transparent';
   // 绑定事件，当输入框内容变化时，调用search函数
   input.oninput = queryText;
 
+  const uppercaseButtonBox = document.createElement('div');
+  uppercaseButtonBox.style.width = '22px';
+  uppercaseButtonBox.style.height = '22px';
+  uppercaseButtonBox.style.display = 'flex';
+  uppercaseButtonBox.style.alignItems = 'center';
+  uppercaseButtonBox.style.justifyContent = 'center';
+  uppercaseButtonBox.style.cursor = 'pointer';
+  uppercaseButtonBox.style.borderRadius = '4px';
+  uppercaseButtonBox.style.marginRight = '4px';
+  uppercaseButtonBox.onmouseenter = () => {
+    uppercaseButtonBox.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+  };
+  uppercaseButtonBox.onmouseleave = () => {
+    uppercaseButtonBox.style.backgroundColor = 'transparent';
+  };
+  const uppercaseButton = document.createElement('button');
+  uppercaseButton.innerHTML = `<img src="${UppercaseIcon}" alt="uppercase" />`;
+  uppercaseButton.style.background = 'none';
+  uppercaseButton.style.border = 'none';
+  uppercaseButton.style.color = 'white';
+  uppercaseButton.style.width = '18px';
+  uppercaseButton.style.height = '18px';
+  uppercaseButtonBox.appendChild(uppercaseButton);
+
+  const lowercaseButtonBox = document.createElement('div');
+  lowercaseButtonBox.style.width = '22px';
+  lowercaseButtonBox.style.height = '22px';
+  lowercaseButtonBox.style.display = 'flex';
+  lowercaseButtonBox.style.alignItems = 'center';
+  lowercaseButtonBox.style.justifyContent = 'center';
+  lowercaseButtonBox.style.cursor = 'pointer';
+  lowercaseButtonBox.style.borderRadius = '4px';
+  lowercaseButtonBox.style.marginRight = '4px';
+  lowercaseButtonBox.onmouseenter = () => {
+    lowercaseButtonBox.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+  };
+  lowercaseButtonBox.onmouseleave = () => {
+    lowercaseButtonBox.style.backgroundColor = 'transparent';
+  };
+  const lowercaseButton = document.createElement('button');
+  lowercaseButton.innerHTML = `<img src="${LowercaseIcon}" alt="lowercase" />`;
+  lowercaseButton.style.background = 'none';
+  lowercaseButton.style.border = 'none';
+  lowercaseButton.style.color = 'white';
+  lowercaseButton.style.width = '18px';
+  lowercaseButton.style.height = '18px';
+  lowercaseButtonBox.appendChild(lowercaseButton);
+
+  inputBox.appendChild(input);
+  inputBox.appendChild(uppercaseButtonBox);
+  inputBox.appendChild(lowercaseButtonBox);
+
   // 将输入框添加到内容区域
-  floatingBox.appendChild(input);
+  floatingBox.appendChild(inputBox);
+
+  // 搜索结果
+  const searchResult = document.createElement('div');
+  searchResult.id = searchResultId;
+  searchResult.textContent = searchResultEmptyText;
+  searchResult.style.color = 'white';
+  searchResult.style.fontSize = '13px';
+  searchResult.style.marginRight = '12px';
+  searchResultElement = searchResult;
+  floatingBox.appendChild(searchResult);
+
+  const prevButtonBox = document.createElement('div');
+  prevButtonBox.style.width = '24px';
+  prevButtonBox.style.height = '24px';
+  prevButtonBox.style.display = 'flex';
+  prevButtonBox.style.alignItems = 'center';
+  prevButtonBox.style.justifyContent = 'center';
+  prevButtonBox.style.cursor = 'pointer';
+  prevButtonBox.style.borderRadius = '4px';
+  prevButtonBox.style.marginRight = '4px';
+  prevButtonBox.onmouseenter = () => {
+    prevButtonBox.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+  };
+  prevButtonBox.onmouseleave = () => {
+    prevButtonBox.style.backgroundColor = 'transparent';
+  };
+  const prevButton = document.createElement('button');
+  prevButton.innerHTML = `<img src="${PrevIcon}" alt="prev" />`;
+  prevButton.style.background = 'none';
+  prevButton.style.border = 'none';
+  prevButton.style.color = 'white';
+  prevButton.style.width = '16px';
+  prevButton.style.height = '16px';
+  prevButtonBox.appendChild(prevButton);
+
+  const nextButtonBox = document.createElement('div');
+  nextButtonBox.style.width = '24px';
+  nextButtonBox.style.height = '24px';
+  nextButtonBox.style.display = 'flex';
+  nextButtonBox.style.alignItems = 'center';
+  nextButtonBox.style.justifyContent = 'center';
+  nextButtonBox.style.cursor = 'pointer';
+  nextButtonBox.style.borderRadius = '4px';
+  nextButtonBox.style.marginRight = '4px';
+  nextButtonBox.onmouseenter = () => {
+    nextButtonBox.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+  };
+  nextButtonBox.onmouseleave = () => {
+    nextButtonBox.style.backgroundColor = 'transparent';
+  };
+  const nextButton = document.createElement('button');
+  nextButton.innerHTML = `<img src="${NextIcon}" alt="next" />`;
+  nextButton.style.background = 'none';
+  nextButton.style.border = 'none';
+  nextButton.style.color = 'white';
+  nextButton.style.width = '16px';
+  nextButton.style.height = '16px';
+  nextButtonBox.appendChild(nextButton);
 
   // 创建关闭按钮
+  const closeButtonBox = document.createElement('div');
+  closeButtonBox.style.width = '24px';
+  closeButtonBox.style.height = '24px';
+  closeButtonBox.style.display = 'flex';
+  closeButtonBox.style.alignItems = 'center';
+  closeButtonBox.style.justifyContent = 'center';
+  closeButtonBox.style.cursor = 'pointer';
+  closeButtonBox.style.borderRadius = '4px';
+  closeButtonBox.style.marginRight = '4px';
+  closeButtonBox.onmouseenter = () => {
+    closeButtonBox.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+  };
+  closeButtonBox.onmouseleave = () => {
+    closeButtonBox.style.backgroundColor = 'transparent';
+  };
   const closeButton = document.createElement('button');
   closeButton.innerHTML = `<img src="${CloseIcon}" alt="close" />`;
   closeButton.style.background = 'none';
   closeButton.style.border = 'none';
   closeButton.style.color = 'white';
-  closeButton.style.cursor = 'pointer';
-  closeButton.style.width = '20px';
-  closeButton.style.height = '20px';
+  closeButton.style.width = '16px';
+  closeButton.style.height = '16px';
   closeButton.style.margin = '0 4px';
+  closeButtonBox.appendChild(closeButton);
 
   closeButton.onclick = () => {
     floatingBox.style.display = 'none';
   };
 
-  floatingBox.appendChild(closeButton);
-
-  // 创建按钮区域
-  const buttons = document.createElement('div');
-  buttons.style.display = 'flex';
-  buttons.style.justifyContent = 'space-between';
-  buttons.style.marginBottom = '10px';
-
-  // 创建 Aa 按钮
-  const aaButton = document.createElement('button');
-  aaButton.innerHTML = 'Aa';
-  aaButton.style.backgroundColor = '#555';
-  aaButton.style.color = 'white';
-  aaButton.style.border = 'none';
-  aaButton.style.padding = '8px 12px';
-  aaButton.style.borderRadius = '4px';
-  aaButton.style.cursor = 'pointer';
-  aaButton.onmouseover = () => {
-    aaButton.style.backgroundColor = '#777';
-  };
-  aaButton.onmouseout = () => {
-    aaButton.style.backgroundColor = '#555';
-  };
-
-  // 创建 ab 按钮
-  const abButton = document.createElement('button');
-  abButton.innerHTML = 'ab';
-  abButton.style.backgroundColor = '#555';
-  abButton.style.color = 'white';
-  abButton.style.border = 'none';
-  abButton.style.padding = '8px 12px';
-  abButton.style.borderRadius = '4px';
-  abButton.style.cursor = 'pointer';
-  abButton.onmouseover = () => {
-    abButton.style.backgroundColor = '#777';
-  };
-  abButton.onmouseout = () => {
-    abButton.style.backgroundColor = '#555';
-  };
-
-  // 将按钮添加到按钮区域
-  buttons.appendChild(aaButton);
-  buttons.appendChild(abButton);
-
-  // 创建导航区域
-  const navigation = document.createElement('div');
-  navigation.style.display = 'flex';
-  navigation.style.justifyContent = 'space-between';
-
-  // 创建上按钮
-  const upButton = document.createElement('button');
-  upButton.innerHTML = '↑';
-  upButton.style.backgroundColor = '#555';
-  upButton.style.color = 'white';
-  upButton.style.border = 'none';
-  upButton.style.padding = '8px 12px';
-  upButton.style.borderRadius = '4px';
-  upButton.style.cursor = 'pointer';
-  upButton.onmouseover = () => {
-    upButton.style.backgroundColor = '#777';
-  };
-  upButton.onmouseout = () => {
-    upButton.style.backgroundColor = '#555';
-  };
-
-  // 创建下按钮
-  const downButton = document.createElement('button');
-  downButton.innerHTML = '↓';
-  downButton.style.backgroundColor = '#555';
-  downButton.style.color = 'white';
-  downButton.style.border = 'none';
-  downButton.style.padding = '8px 12px';
-  downButton.style.borderRadius = '4px';
-  downButton.style.cursor = 'pointer';
-  downButton.onmouseover = () => {
-    downButton.style.backgroundColor = '#777';
-  };
-  downButton.onmouseout = () => {
-    downButton.style.backgroundColor = '#555';
-  };
-
-  // 将导航按钮添加到导航区域
-  navigation.appendChild(upButton);
-  navigation.appendChild(downButton);
+  floatingBox.appendChild(prevButtonBox);
+  floatingBox.appendChild(nextButtonBox);
+  floatingBox.appendChild(closeButtonBox);
 
   // 将悬浮框添加到文档中
   document.documentElement.appendChild(floatingBox);
@@ -216,6 +282,9 @@ function queryText(e: any) {
   );
   renderTextHighlight(positions);
   subscriber = hitTextSubscriber();
+  searchResultElement!.textContent = resultsMap.size
+    ? `第1项，共${resultsMap.size}项`
+    : searchResultEmptyText;
 }
 
 // 过滤出可见的文本节点，通过数组返回
@@ -236,6 +305,9 @@ function hitTextSubscriber() {
       keyword,
     );
     renderTextHighlight(positions);
+    searchResultElement!.textContent = resultsMap.size
+      ? `第1项，共${resultsMap.size}项`
+      : searchResultEmptyText;
   });
   subscriber.start();
   return subscriber;
@@ -326,8 +398,14 @@ function renderTextHighlight(
 }
 
 window.addEventListener('load', () => {
-  setTimeout(() => {
-    generateTextMap();
-  }, 1000);
-  insertInput();
+  window.addEventListener('keydown', (e) => {
+    // 快捷键Ctrl + F
+    if (e.ctrlKey && e.key === 'f') {
+      const timer = setTimeout(() => {
+        generateTextMap();
+        clearTimeout(timer);
+      }, 1000);
+      insertFloatBox();
+    }
+  });
 });
