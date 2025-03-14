@@ -3,16 +3,19 @@
   "description": "这是一款全能的文本检索工具",
   "version": "1.0",
   "manifest_version": 3,
+  "background": {
+    "service_worker": "background/background.js"
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content-scripts/index.js"]
+      "js": ["content-scripts/insert-script.js"]
     }
   ],
-  "permissions": ["sidePanel"],
+  "permissions": ["sidePanel", "storage"],
   "side_panel": {
     "default_path": "Sidebar.html",
-    "default_title": "打开侧边栏"
+    "default_title": "设置面板"
   },
   "icons": {}
 }

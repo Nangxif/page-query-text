@@ -1,13 +1,20 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
+import { defaultValues } from '@/constants';
 import CloseIcon from '../assets/images/close-icon.png';
 import LowercaseIcon from '../assets/images/lowercase-icon.png';
 import NextIcon from '../assets/images/next-icon.png';
 import PrevIcon from '../assets/images/prev-icon.png';
+import SettingsIcon from '../assets/images/setting-icon.png';
 import UppercaseIcon from '../assets/images/uppercase-icon.png';
 
+// 是否打开搜索工具
+let isOpen = false;
+let config = defaultValues;
 const elementId = Date.now().toString();
 const searchResultId = `${elementId}-search-result`;
 const searchResultEmptyText = '无结果';
+let floatingBox = null as HTMLElement | null;
+let highlightContainer = null as HTMLElement | null;
 let searchResultElement = null as HTMLElement | null;
 
 const textContentMap = new Map() as Map<Text, string>;
@@ -49,7 +56,7 @@ function recursionElementChildNodes(elements: HTMLElement[]) {
 // 往页面插入一个悬浮框
 function insertFloatBox() {
   // 创建悬浮框
-  const floatingBox = document.createElement('div');
+  floatingBox = document.createElement('div');
   floatingBox.style.display = 'flex';
   floatingBox.style.alignItems = 'center';
   floatingBox.style.position = 'fixed';
@@ -62,6 +69,39 @@ function insertFloatBox() {
   floatingBox.style.borderRadius = '4px';
   floatingBox.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.5)';
   floatingBox.style.zIndex = '1000000';
+
+  // 设置按钮
+  const settingButtonBox = document.createElement('div');
+  settingButtonBox.style.width = '24px';
+  settingButtonBox.style.height = '24px';
+  settingButtonBox.style.display = 'flex';
+  settingButtonBox.style.alignItems = 'center';
+  settingButtonBox.style.justifyContent = 'center';
+  settingButtonBox.style.cursor = 'pointer';
+  settingButtonBox.style.borderRadius = '4px';
+  settingButtonBox.style.marginRight = '4px';
+  settingButtonBox.onmouseenter = () => {
+    settingButtonBox.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+  };
+  settingButtonBox.onmouseleave = () => {
+    settingButtonBox.style.backgroundColor = 'transparent';
+  };
+  settingButtonBox.onclick = () => {
+    chrome.runtime.sendMessage({ action: 'openSidePanel' }, (response) => {
+      if (response.status === 'success') {
+        console.log('侧边栏已打开');
+      } else {
+        console.error('打开侧边栏失败');
+      }
+    });
+  };
+  const settingButton = document.createElement('div');
+  settingButton.innerHTML = `<img src="${SettingsIcon}" alt="settings" />`;
+  settingButton.style.width = '16px';
+  settingButton.style.height = '16px';
+  settingButton.style.cursor = 'pointer';
+  settingButtonBox.appendChild(settingButton);
+  floatingBox.appendChild(settingButtonBox);
 
   // 创建输入框
   const inputBox = document.createElement('div');
@@ -106,7 +146,7 @@ function insertFloatBox() {
   uppercaseButtonBox.onmouseleave = () => {
     uppercaseButtonBox.style.backgroundColor = 'transparent';
   };
-  const uppercaseButton = document.createElement('button');
+  const uppercaseButton = document.createElement('div');
   uppercaseButton.innerHTML = `<img src="${UppercaseIcon}" alt="uppercase" />`;
   uppercaseButton.style.background = 'none';
   uppercaseButton.style.border = 'none';
@@ -130,7 +170,7 @@ function insertFloatBox() {
   lowercaseButtonBox.onmouseleave = () => {
     lowercaseButtonBox.style.backgroundColor = 'transparent';
   };
-  const lowercaseButton = document.createElement('button');
+  const lowercaseButton = document.createElement('div');
   lowercaseButton.innerHTML = `<img src="${LowercaseIcon}" alt="lowercase" />`;
   lowercaseButton.style.background = 'none';
   lowercaseButton.style.border = 'none';
@@ -171,7 +211,7 @@ function insertFloatBox() {
   prevButtonBox.onmouseleave = () => {
     prevButtonBox.style.backgroundColor = 'transparent';
   };
-  const prevButton = document.createElement('button');
+  const prevButton = document.createElement('div');
   prevButton.innerHTML = `<img src="${PrevIcon}" alt="prev" />`;
   prevButton.style.background = 'none';
   prevButton.style.border = 'none';
@@ -195,7 +235,7 @@ function insertFloatBox() {
   nextButtonBox.onmouseleave = () => {
     nextButtonBox.style.backgroundColor = 'transparent';
   };
-  const nextButton = document.createElement('button');
+  const nextButton = document.createElement('div');
   nextButton.innerHTML = `<img src="${NextIcon}" alt="next" />`;
   nextButton.style.background = 'none';
   nextButton.style.border = 'none';
@@ -220,7 +260,7 @@ function insertFloatBox() {
   closeButtonBox.onmouseleave = () => {
     closeButtonBox.style.backgroundColor = 'transparent';
   };
-  const closeButton = document.createElement('button');
+  const closeButton = document.createElement('div');
   closeButton.innerHTML = `<img src="${CloseIcon}" alt="close" />`;
   closeButton.style.background = 'none';
   closeButton.style.border = 'none';
@@ -230,9 +270,7 @@ function insertFloatBox() {
   closeButton.style.margin = '0 4px';
   closeButtonBox.appendChild(closeButton);
 
-  closeButton.onclick = () => {
-    floatingBox.style.display = 'none';
-  };
+  closeButton.onclick = closeSearchTool;
 
   floatingBox.appendChild(prevButtonBox);
   floatingBox.appendChild(nextButtonBox);
@@ -240,6 +278,24 @@ function insertFloatBox() {
 
   // 将悬浮框添加到文档中
   document.documentElement.appendChild(floatingBox);
+}
+
+// 关闭搜索工具
+function closeSearchTool() {
+  // 清除搜索框
+  floatingBox?.remove();
+  floatingBox = null;
+  textContentMap.clear();
+  resultsMap.clear();
+  keyword = '';
+  subscriber?.stop();
+  subscriber = null;
+  observer?.disconnect();
+  observer = null;
+  searchResultElement = null;
+  highlightContainer?.remove();
+  highlightContainer = null;
+  isOpen = false;
 }
 
 let subscriber: {
@@ -370,19 +426,20 @@ function renderTextHighlight(
   }[],
 ) {
   // 先清除上一次的highlight
-  const highlightContainer = document.querySelector('#highlight');
+  highlightContainer = document.querySelector('#highlight');
   highlightContainer?.remove();
+  highlightContainer = null;
   if (positions?.length === 0) return;
-  const newHighlightContainer = document.createElement('div');
-  newHighlightContainer.id = 'highlight';
-  newHighlightContainer.style.position = 'fixed';
-  newHighlightContainer.style.top = '0';
-  newHighlightContainer.style.left = '0';
-  newHighlightContainer.style.width = '100%';
-  newHighlightContainer.style.height = '100%';
-  newHighlightContainer.style.zIndex = '1000';
-  newHighlightContainer.style.pointerEvents = 'none';
-  document.documentElement.appendChild(newHighlightContainer);
+  highlightContainer = document.createElement('div');
+  highlightContainer.id = 'highlight';
+  highlightContainer.style.position = 'fixed';
+  highlightContainer.style.top = '0';
+  highlightContainer.style.left = '0';
+  highlightContainer.style.width = '100%';
+  highlightContainer.style.height = '100%';
+  highlightContainer.style.zIndex = '1000';
+  highlightContainer.style.pointerEvents = 'none';
+  document.documentElement.appendChild(highlightContainer);
 
   positions.forEach((position) => {
     const highlight = document.createElement('div');
@@ -391,21 +448,46 @@ function renderTextHighlight(
     highlight.style.left = `${position.left}px`;
     highlight.style.width = `${position.width}px`;
     highlight.style.height = `${position.height}px`;
-    highlight.style.backgroundColor = 'yellow';
-    highlight.style.opacity = '0.5';
-    newHighlightContainer.appendChild(highlight);
+    highlight.style.backgroundColor = config.color;
+    highlight.style.opacity = '0.6';
+    highlightContainer!.appendChild(highlight);
   });
 }
 
 window.addEventListener('load', () => {
-  window.addEventListener('keydown', (e) => {
-    // 快捷键Ctrl + F
-    if (e.ctrlKey && e.key === 'f') {
-      const timer = setTimeout(() => {
-        generateTextMap();
-        clearTimeout(timer);
-      }, 1000);
-      insertFloatBox();
-    }
+  // 先获取本地存储的信息
+  chrome.storage.sync.get(['shortcut', 'color', 'fixed'], (result) => {
+    config = {
+      ...defaultValues,
+      ...result,
+    };
+    const { shortcut } = config;
+    console.log('====本地缓存已成功获取，可以继续执行后续逻辑====');
+    console.log(`请按快捷键: ${shortcut.join('+')}打开搜索工具`);
+    window.addEventListener('keydown', (e) => {
+      // 把ctrlKey、shiftKey、altKey、metaKey筛选出来
+      const shortcutWithSpecialKeys = shortcut.filter((item) =>
+        ['ctrlKey', 'shiftKey', 'altKey', 'metaKey'].includes(item),
+      );
+      const shortcutKeys = shortcut.filter(
+        (item) => !['ctrlKey', 'shiftKey', 'altKey', 'metaKey'].includes(item),
+      );
+      if (
+        shortcutWithSpecialKeys.every(
+          (item: any) => e[item as keyof KeyboardEvent],
+        ) &&
+        shortcutKeys.every((item: any) => e.key === item)
+      ) {
+        console.log('成功打开搜索工具');
+        if (!isOpen) {
+          isOpen = true;
+          const timer = setTimeout(() => {
+            generateTextMap();
+            clearTimeout(timer);
+          }, 1000);
+          insertFloatBox();
+        }
+      }
+    });
   });
 });

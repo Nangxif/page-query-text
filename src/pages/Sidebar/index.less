@@ -1,3 +1,41 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
 .container {
-  padding-top: 80px;
+  min-height: 100vh;
+  background-color: rgb(32 32 32);
+  padding: 12px;
+
+  .form-item {
+    margin-bottom: 12px;
+
+    :global {
+      .ant-form-item-label > label {
+        color: white;
+      }
+    }
+  }
+
+  .save-btn {
+    width: 100%;
+  }
+}
+
+.shortcut-picker {
+  :global {
+    .ant-select-selection-item-remove {
+      color: #bbb !important;
+    }
+
+    .ant-select-arrow {
+      color: #bbb;
+    }
+  }
+}
+
+.popup-container {
+  background-color: rgb(49 49 49);
 }
