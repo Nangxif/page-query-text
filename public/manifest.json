@@ -1,6 +1,6 @@
 {
-  "name": "文本检索",
-  "description": "这是一款全能的文本检索工具",
+  "name": "文本搜索",
+  "description": "这是一款复刻代码编辑器vscode的文本搜索插件",
   "version": "1.0",
   "manifest_version": 3,
   "background": {
@@ -23,5 +23,17 @@
     "default_path": "Sidebar.html",
     "default_title": "设置面板"
   },
-  "icons": {}
+  "icons": {
+    "16": "images/icon-16.png",
+    "32": "images/icon-32.png",
+    "48": "images/icon-48.png",
+    "128": "images/icon-128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "images/icon-16.png",
+      "24": "images/icon-24.png",
+      "32": "images/icon-32.png"
+    }
+  }
 }

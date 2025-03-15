@@ -29,9 +29,11 @@ const Sidebar: React.FC = () => {
   }, []);
 
   const handleSubmit = (values: FormValues) => {
+    const metaColor = (values.color as any).metaColor;
+    const color = `rgba(${metaColor?.r},${metaColor?.g},${metaColor?.b},${metaColor?.a})`;
     chrome.storage.sync.set({
       shortcut: values.shortcut,
-      color: values.color,
+      color: color,
       fixed: values.fixed,
     });
     message.success('保存成功，刷新页面之后配置才可生效');
@@ -92,7 +94,7 @@ const Sidebar: React.FC = () => {
           name="color"
           className={styles['form-item']}
         >
-          <ColorPicker />
+          <ColorPicker format="rgb" />
         </FormItem>
         <FormItem
           label="固定位置"
