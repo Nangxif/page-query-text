@@ -15,6 +15,7 @@ const { Item: FormItem, useForm } = Form;
 type FormValues = {
   shortcut: string[];
   color: string;
+  selectedColor: string;
   fixed: boolean;
 };
 
@@ -23,17 +24,23 @@ const Sidebar: React.FC = () => {
 
   // 初始化数据
   useEffect(() => {
-    chrome.storage.sync.get(['shortcut', 'color', 'fixed'], (result) => {
-      form.setFieldsValue(result);
-    });
+    chrome.storage.sync.get(
+      ['shortcut', 'color', 'selectedColor', 'fixed'],
+      (result) => {
+        form.setFieldsValue(result);
+      },
+    );
   }, []);
 
   const handleSubmit = (values: FormValues) => {
-    const metaColor = (values.color as any).metaColor;
-    const color = `rgba(${metaColor?.r},${metaColor?.g},${metaColor?.b},${metaColor?.a})`;
+    const colorMetaColor = (values.color as any).metaColor;
+    const color = `rgba(${colorMetaColor?.r},${colorMetaColor?.g},${colorMetaColor?.b},${colorMetaColor?.a})`;
+    const selectedColorMetaColor = (values.selectedColor as any).metaColor;
+    const selectedColor = `rgba(${selectedColorMetaColor?.r},${selectedColorMetaColor?.g},${selectedColorMetaColor?.b},${selectedColorMetaColor?.a})`;
     chrome.storage.sync.set({
       shortcut: values.shortcut,
-      color: color,
+      color,
+      selectedColor,
       fixed: values.fixed,
     });
     message.success('保存成功，刷新页面之后配置才可生效');
@@ -97,6 +104,13 @@ const Sidebar: React.FC = () => {
           <ColorPicker format="rgb" />
         </FormItem>
         <FormItem
+          label="当前选中的文字颜色"
+          name="selectedColor"
+          className={styles['form-item']}
+        >
+          <ColorPicker format="rgb" />
+        </FormItem>
+        <FormItem
           label="固定位置"
           name="fixed"
           className={styles['form-item']}
@@ -106,6 +120,15 @@ const Sidebar: React.FC = () => {
         </FormItem>
         <Button type="primary" htmlType="submit" className={styles['save-btn']}>
           保存
+        </Button>
+        <Button
+          type="link"
+          className={styles['how-to-use-btn']}
+          onClick={() => {
+            window.location.href = '/Instruction.html';
+          }}
+        >
+          如何使用文本搜索？
         </Button>
       </Form>
     </ConfigProvider>

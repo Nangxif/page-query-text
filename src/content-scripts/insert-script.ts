@@ -1,13 +1,16 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import { defaultValues } from '@/constants';
+import { MatchCaseEnum } from '@/types';
 import { FloatingSearchBoxElement } from './floating-search-box';
 
 // 是否打开搜索工具
 let isOpen = false;
 let config = defaultValues;
 const searchResultEmptyText = '无结果';
+let currentIndex = 1;
 let searchBox = null as FloatingSearchBoxElement | null;
 let highlightContainer = null as HTMLElement | null;
+let matchCase = MatchCaseEnum.DontMatch;
 
 const textContentMap = new Map() as Map<Text, string>;
 let keyword = '';
@@ -61,9 +64,15 @@ function insertSearchBox() {
     });
   });
   searchBox.addEventListener('search', queryText);
+  searchBox.addEventListener('matchcasechange', matchCaseChange);
   searchBox.addEventListener('close', closeSearchBox);
 }
 
+function matchCaseChange(e: any) {
+  const newMatchCase = e?.detail as MatchCaseEnum;
+  matchCase = newMatchCase;
+  queryText(keyword);
+}
 // 关闭搜索工具
 function closeSearchBox() {
   searchBox?.remove();
@@ -96,8 +105,15 @@ function queryText(e: any) {
   // 在下面这个map里面搜索出对应的keyword
   for (const textNode of textContentMap.keys()) {
     const value = textContentMap.get(textNode);
-    if (keyword && value && value.includes(keyword)) {
-      resultsMap.set(textNode, false);
+    if (keyword && value) {
+      if (matchCase === MatchCaseEnum.Match && value.includes(keyword)) {
+        resultsMap.set(textNode, false);
+      } else if (
+        matchCase === MatchCaseEnum.DontMatch &&
+        value?.toLowerCase().includes(keyword?.toLowerCase())
+      ) {
+        resultsMap.set(textNode, false);
+      }
     }
   }
 
@@ -122,7 +138,9 @@ function queryText(e: any) {
   subscriber = hitTextSubscriber();
   if (searchBox?.shadowRoot?.querySelector('#search-result')) {
     searchBox.shadowRoot.querySelector('#search-result')!.textContent =
-      resultsMap.size ? `第1项，共${resultsMap.size}项` : searchResultEmptyText;
+      resultsMap.size
+        ? `第${currentIndex}项，共${resultsMap.size}项`
+        : searchResultEmptyText;
   }
 }
 

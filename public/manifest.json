@@ -1,6 +1,6 @@
 {
-  "name": "文本搜索",
-  "description": "这是一款复刻代码编辑器vscode的文本搜索插件",
+  "name": "PageQueryText",
+  "description": "复刻代码编辑器vscode的文本搜索插件",
   "version": "1.0",
   "manifest_version": 3,
   "background": {

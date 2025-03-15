@@ -1,17 +1,17 @@
+import { MatchCaseEnum } from '@/types';
 import { setStyle } from '@/utils';
 import CloseIcon from '../assets/images/close-icon.png';
-import LowercaseIcon from '../assets/images/lowercase-icon.png';
+import DontMatchCaseIcon from '../assets/images/dont-match-case-icon.png';
+import MatchCaseIcon from '../assets/images/match-case-icon.png';
 import NextIcon from '../assets/images/next-icon.png';
 import PrevIcon from '../assets/images/prev-icon.png';
 import SettingsIcon from '../assets/images/setting-icon.png';
-import UppercaseIcon from '../assets/images/uppercase-icon.png';
 
 // 定义一个悬浮搜索框的Web Component
 class FloatingSearchBox extends HTMLElement {
   private floatingBox: HTMLElement | null = null;
-  private searchResultElement: HTMLElement | null = null;
   private searchResultId: string = `search-result`;
-  private searchResultEmptyText: string = '无结果';
+  private matchCase = MatchCaseEnum.DontMatch;
 
   constructor() {
     super();
@@ -107,8 +107,8 @@ class FloatingSearchBox extends HTMLElement {
       this.dispatchEvent(new CustomEvent('search', { detail: input.value }));
     };
 
-    const uppercaseButtonBox = document.createElement('div');
-    setStyle(uppercaseButtonBox, {
+    const matchcaseButtonBox = document.createElement('div');
+    setStyle(matchcaseButtonBox, {
       width: '22px',
       height: '22px',
       display: 'flex',
@@ -118,26 +118,44 @@ class FloatingSearchBox extends HTMLElement {
       borderRadius: '4px',
       marginRight: '4px',
     });
-    uppercaseButtonBox.onmouseenter = () => {
-      setStyle(uppercaseButtonBox, {
+    matchcaseButtonBox.onmouseenter = () => {
+      setStyle(matchcaseButtonBox, {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
       });
     };
-    uppercaseButtonBox.onmouseleave = () => {
-      setStyle(uppercaseButtonBox, {
-        backgroundColor: 'transparent',
-      });
+    matchcaseButtonBox.onmouseleave = () => {
+      if (this.matchCase === MatchCaseEnum.DontMatch) {
+        setStyle(matchcaseButtonBox, {
+          backgroundColor: 'transparent',
+        });
+      }
     };
-    const uppercaseButtonIcon = document.createElement('img');
-    uppercaseButtonIcon.src = UppercaseIcon;
-    setStyle(uppercaseButtonIcon, {
+    matchcaseButtonBox.onclick = () => {
+      this.matchCase =
+        this.matchCase === MatchCaseEnum.DontMatch
+          ? MatchCaseEnum.Match
+          : MatchCaseEnum.DontMatch;
+      if (this.matchCase === MatchCaseEnum.Match) {
+        setStyle(matchcaseButtonBox, {
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        });
+      }
+      this.dispatchEvent(
+        new CustomEvent('matchcasechange', {
+          detail: this.matchCase,
+        }),
+      );
+    };
+    const matchCaseButtonIcon = document.createElement('img');
+    matchCaseButtonIcon.src = MatchCaseIcon;
+    setStyle(matchCaseButtonIcon, {
       width: '18px',
       height: '18px',
     });
-    uppercaseButtonBox.appendChild(uppercaseButtonIcon);
+    matchcaseButtonBox.appendChild(matchCaseButtonIcon);
 
-    const lowercaseButtonBox = document.createElement('div');
-    setStyle(lowercaseButtonBox, {
+    const dontMatchCaseButtonBox = document.createElement('div');
+    setStyle(dontMatchCaseButtonBox, {
       width: '22px',
       height: '22px',
       display: 'flex',
@@ -147,27 +165,27 @@ class FloatingSearchBox extends HTMLElement {
       borderRadius: '4px',
       marginRight: '4px',
     });
-    lowercaseButtonBox.onmouseenter = () => {
-      setStyle(lowercaseButtonBox, {
+    dontMatchCaseButtonBox.onmouseenter = () => {
+      setStyle(dontMatchCaseButtonBox, {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
       });
     };
-    lowercaseButtonBox.onmouseleave = () => {
-      setStyle(lowercaseButtonBox, {
+    dontMatchCaseButtonBox.onmouseleave = () => {
+      setStyle(dontMatchCaseButtonBox, {
         backgroundColor: 'transparent',
       });
     };
-    const lowercaseButtonIcon = document.createElement('img');
-    lowercaseButtonIcon.src = LowercaseIcon;
-    setStyle(lowercaseButtonIcon, {
+    const dontMatchCaseButtonIcon = document.createElement('img');
+    dontMatchCaseButtonIcon.src = DontMatchCaseIcon;
+    setStyle(dontMatchCaseButtonIcon, {
       width: '18px',
       height: '18px',
     });
-    lowercaseButtonBox.appendChild(lowercaseButtonIcon);
+    dontMatchCaseButtonBox.appendChild(dontMatchCaseButtonIcon);
 
     inputBox.appendChild(input);
-    inputBox.appendChild(uppercaseButtonBox);
-    inputBox.appendChild(lowercaseButtonBox);
+    inputBox.appendChild(matchcaseButtonBox);
+    inputBox.appendChild(dontMatchCaseButtonBox);
 
     // 将输入框添加到内容区域
     this.floatingBox.appendChild(inputBox);
@@ -175,13 +193,12 @@ class FloatingSearchBox extends HTMLElement {
     // 搜索结果
     const searchResult = document.createElement('div');
     searchResult.id = this.searchResultId;
-    searchResult.textContent = this.searchResultEmptyText;
+    searchResult.textContent = '无结果';
     setStyle(searchResult, {
       color: 'white',
       fontSize: '13px',
       marginRight: '12px',
     });
-    this.searchResultElement = searchResult;
     this.floatingBox.appendChild(searchResult);
 
     const prevButtonBox = document.createElement('div');
