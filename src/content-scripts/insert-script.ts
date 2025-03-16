@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import { defaultValues } from '@/constants';
-import { MatchCaseEnum } from '@/types';
+import { MatchCaseEnum, Position } from '@/types';
+import { isSameHighlight } from '@/utils';
 import { FloatingSearchBoxElement } from './floating-search-box';
 
 // 是否打开搜索工具
@@ -11,6 +12,8 @@ let currentIndex = 1;
 let searchBox = null as FloatingSearchBoxElement | null;
 let highlightContainer = null as HTMLElement | null;
 let matchCase = MatchCaseEnum.DontMatch;
+let prevPositionsMap: Map<Text, Position> = new Map();
+const highlightNodesMap: Map<Text, HTMLDivElement> = new Map();
 
 const textContentMap = new Map() as Map<Text, string>;
 let keyword = '';
@@ -130,11 +133,11 @@ function queryText(e: any) {
   for (const textNode of resultsMap.keys()) {
     observer!.observe(textNode.parentElement as HTMLElement);
   }
-  const positions = getTextPosition(
+  const positionsMap = getTextPosition(
     filterVisibleTextNodes(resultsMap),
     keyword,
   );
-  renderTextHighlight(positions);
+  renderTextHighlight(positionsMap);
   subscriber = hitTextSubscriber();
   if (searchBox?.shadowRoot?.querySelector('#search-result')) {
     searchBox.shadowRoot.querySelector('#search-result')!.textContent =
@@ -157,11 +160,11 @@ function filterVisibleTextNodes(resultsMap: Map<Text, boolean>) {
 
 function hitTextSubscriber() {
   const subscriber = requestAnimationFrameLoop(() => {
-    const positions = getTextPosition(
+    const positionsMap = getTextPosition(
       filterVisibleTextNodes(resultsMap),
       keyword,
     );
-    renderTextHighlight(positions);
+    renderTextHighlight(positionsMap);
     if (searchBox?.shadowRoot?.querySelector('#search-result')) {
       searchBox.shadowRoot.querySelector('#search-result')!.textContent =
         resultsMap.size
@@ -190,12 +193,7 @@ function requestAnimationFrameLoop(callback: () => void) {
 }
 
 function getTextPosition(textNodes: Text[], keyword: string) {
-  const textPositions: {
-    top: number;
-    left: number;
-    width: number;
-    height: number;
-  }[] = [];
+  const textPositionsMap: Map<Text, Position> = new Map();
   textNodes.forEach((textNode) => {
     // 确保是文本节点
     const range = document.createRange();
@@ -210,7 +208,7 @@ function getTextPosition(textNodes: Text[], keyword: string) {
 
     // 获取范围的边界矩形
     const rect = range.getBoundingClientRect();
-    textPositions.push({
+    textPositionsMap.set(textNode, {
       top: rect.top,
       left: rect.left,
       width: rect.width,
@@ -218,44 +216,59 @@ function getTextPosition(textNodes: Text[], keyword: string) {
     });
   });
 
-  return textPositions;
+  return textPositionsMap;
 }
 
-function renderTextHighlight(
-  positions: {
-    top: number;
-    left: number;
-    width: number;
-    height: number;
-  }[],
-) {
-  // 先清除上一次的highlight
-  highlightContainer = document.querySelector('#highlight');
-  highlightContainer?.remove();
-  highlightContainer = null;
-  if (positions?.length === 0) return;
-  highlightContainer = document.createElement('div');
-  highlightContainer.id = 'highlight';
-  highlightContainer.style.position = 'fixed';
-  highlightContainer.style.top = '0';
-  highlightContainer.style.left = '0';
-  highlightContainer.style.width = '100%';
-  highlightContainer.style.height = '100%';
-  highlightContainer.style.zIndex = '1000';
-  highlightContainer.style.pointerEvents = 'none';
-  document.documentElement.appendChild(highlightContainer);
+function renderTextHighlight(positionsMap: Map<Text, Position>) {
+  if (positionsMap?.size === 0) return;
+  if (!highlightContainer) {
+    highlightContainer = document.createElement('div');
+    highlightContainer.id = 'highlight';
+    highlightContainer.style.position = 'fixed';
+    highlightContainer.style.top = '0';
+    highlightContainer.style.left = '0';
+    highlightContainer.style.width = '100%';
+    highlightContainer.style.height = '100%';
+    highlightContainer.style.zIndex = '1000';
+    highlightContainer.style.pointerEvents = 'none';
+    // 不挂在body上，减少被误更改样式的概率
+    document.documentElement.appendChild(highlightContainer);
+  }
 
-  positions.forEach((position) => {
-    const highlight = document.createElement('div');
-    highlight.style.position = 'absolute';
-    highlight.style.top = `${position.top}px`;
-    highlight.style.left = `${position.left}px`;
-    highlight.style.width = `${position.width}px`;
-    highlight.style.height = `${position.height}px`;
-    highlight.style.backgroundColor = config.color;
-    highlight.style.opacity = '0.6';
-    highlightContainer!.appendChild(highlight);
-  });
+  for (const textNode of positionsMap.keys()) {
+    const prevPosition = prevPositionsMap.get(textNode);
+    const nextPosition = positionsMap.get(textNode)!;
+
+    if (prevPosition) {
+      // 如果上一次渲染有并且位置都一样，那么就不变更
+      if (isSameHighlight(prevPosition, nextPosition)) {
+        return;
+      } else {
+        const highlightNode = highlightNodesMap.get(textNode)!;
+        const x = nextPosition.left - prevPosition.left;
+        const y = nextPosition.top - prevPosition.top;
+        highlightNode.style.transform = `translate3d(${x}px,${y}px,0)`;
+      }
+    } else {
+      const highlight = document.createElement('div');
+      highlight.style.position = 'absolute';
+      highlight.style.top = `${nextPosition.top}px`;
+      highlight.style.left = `${nextPosition.left}px`;
+      highlight.style.width = `${nextPosition.width}px`;
+      highlight.style.height = `${nextPosition.height}px`;
+      highlight.style.backgroundColor = config.color;
+      highlight.style.opacity = '0.6';
+      highlightContainer!.appendChild(highlight);
+      highlightNodesMap.set(textNode, highlight);
+    }
+  }
+  // 清除已经不存在的highlight
+  for (const textNode of prevPositionsMap.keys()) {
+    if (!positionsMap.get(textNode)) {
+      highlightContainer.removeChild(textNode);
+    }
+  }
+  prevPositionsMap = positionsMap;
 }
 
 window.addEventListener('load', () => {
