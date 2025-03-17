@@ -15,7 +15,10 @@
   "web_accessible_resources": [
     {
       "matches": ["<all_urls>"],
-      "resources": ["content-scripts/floating-search-box.js"]
+      "resources": [
+        "content-scripts/floating-search-box.js",
+        "content-scripts/highlight.js"
+      ]
     }
   ],
   "permissions": ["sidePanel", "storage"],
