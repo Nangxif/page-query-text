@@ -133,7 +133,7 @@ function queryText(e: any) {
   for (const textNode of resultsMap.keys()) {
     observer!.observe(textNode.parentElement as HTMLElement);
   }
-  const positionsMap = getTextPosition(
+  const positionsMap = getTextPositionsMap(
     filterVisibleTextNodes(resultsMap),
     keyword,
   );
@@ -160,7 +160,7 @@ function filterVisibleTextNodes(resultsMap: Map<Text, boolean>) {
 
 function hitTextSubscriber() {
   const subscriber = requestAnimationFrameLoop(() => {
-    const positionsMap = getTextPosition(
+    const positionsMap = getTextPositionsMap(
       filterVisibleTextNodes(resultsMap),
       keyword,
     );
@@ -192,20 +192,25 @@ function requestAnimationFrameLoop(callback: () => void) {
   };
 }
 
-function getTextPosition(textNodes: Text[], keyword: string) {
+function getTextPositionsMap(textNodes: Text[], keyword: string) {
   const textPositionsMap: Map<Text, Position> = new Map();
   textNodes.forEach((textNode) => {
     // 确保是文本节点
     const range = document.createRange();
-    const startIndex = textNode.textContent?.indexOf(keyword) || 0;
+    let startIndex = -1;
+    const text = textNode.textContent || '';
+    if (matchCase === MatchCaseEnum.Match) {
+      startIndex = text.indexOf(keyword);
+    } else {
+      startIndex = text.toLowerCase().indexOf(keyword.toLowerCase());
+    }
     if (startIndex > -1) {
       range.setStart(textNode, startIndex); // 从文本节点的开始位置
-      range.setEnd(textNode, startIndex + (keyword?.length || 0)); // 到文本节点的结束位置
+      range.setEnd(textNode, startIndex + keyword.length); // 到文本节点的结束位置
     } else {
       range.setStart(textNode, 0); // 从文本节点的开始位置
       range.setEnd(textNode, textNode.length); // 到文本节点的结束位置
     }
-
     // 获取范围的边界矩形
     const rect = range.getBoundingClientRect();
     textPositionsMap.set(textNode, {
@@ -213,14 +218,16 @@ function getTextPosition(textNodes: Text[], keyword: string) {
       left: rect.left,
       width: rect.width,
       height: rect.height,
+      transformX: 0,
+      transformY: 0,
     });
   });
 
   return textPositionsMap;
 }
 
-function renderTextHighlight(positionsMap: Map<Text, Position>) {
-  if (positionsMap?.size === 0) return;
+function renderTextHighlight(nextPositionsMap: Map<Text, Position>) {
+  if (nextPositionsMap?.size === 0) return;
   if (!highlightContainer) {
     highlightContainer = document.createElement('div');
     highlightContainer.id = 'highlight';
@@ -234,10 +241,9 @@ function renderTextHighlight(positionsMap: Map<Text, Position>) {
     // 不挂在body上，减少被误更改样式的概率
     document.documentElement.appendChild(highlightContainer);
   }
-
-  for (const textNode of positionsMap.keys()) {
+  for (const textNode of nextPositionsMap.keys()) {
     const prevPosition = prevPositionsMap.get(textNode);
-    const nextPosition = positionsMap.get(textNode)!;
+    const nextPosition = nextPositionsMap.get(textNode)!;
 
     if (prevPosition) {
       // 如果上一次渲染有并且位置都一样，那么就不变更
@@ -247,7 +253,16 @@ function renderTextHighlight(positionsMap: Map<Text, Position>) {
         const highlightNode = highlightNodesMap.get(textNode)!;
         const x = nextPosition.left - prevPosition.left;
         const y = nextPosition.top - prevPosition.top;
-        highlightNode.style.transform = `translate3d(${x}px,${y}px,0)`;
+        const transformX = prevPosition.transformX + x;
+        const transformY = prevPosition.transformY + y;
+        nextPositionsMap.set(textNode, {
+          ...nextPosition,
+          transformX,
+          transformY,
+        });
+        highlightNode.style.transform = `translate3d(${transformX}px,${transformY}px,0)`;
+        highlightNode.style.width = `${nextPosition.width}px`;
+        highlightNode.style.height = `${nextPosition.height}px`;
       }
     } else {
       const highlight = document.createElement('div');
@@ -264,11 +279,12 @@ function renderTextHighlight(positionsMap: Map<Text, Position>) {
   }
   // 清除已经不存在的highlight
   for (const textNode of prevPositionsMap.keys()) {
-    if (!positionsMap.get(textNode)) {
-      highlightContainer.removeChild(textNode);
+    if (!nextPositionsMap.get(textNode)) {
+      highlightContainer.removeChild(highlightNodesMap.get(textNode)!);
+      highlightNodesMap.delete(textNode);
     }
   }
-  prevPositionsMap = positionsMap;
+  prevPositionsMap = nextPositionsMap;
 }
 
 window.addEventListener('load', () => {
