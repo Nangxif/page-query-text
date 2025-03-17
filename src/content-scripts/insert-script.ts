@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
+/* eslint-disable @typescript-eslint/no-loop-func */
 import { defaultValues } from '@/constants';
 import { MatchCaseEnum, Position } from '@/types';
 import { isSameHighlight } from '@/utils';
@@ -12,9 +13,9 @@ let currentIndex = 1;
 let searchBox = null as FloatingSearchBoxElement | null;
 let highlightContainer = null as HTMLElement | null;
 let matchCase = MatchCaseEnum.DontMatch;
-let prevPositionsMap: Map<Text, Position> = new Map();
-const highlightNodesMap: Map<Text, HTMLDivElement> = new Map();
-
+let prevPositionsMap: Map<Text, Position[]> = new Map();
+const highlightNodesMap: Map<Text, HTMLDivElement[]> = new Map();
+const penddingCutHighlightNodesIndexs = [] as number[];
 const textContentMap = new Map() as Map<Text, string>;
 let keyword = '';
 
@@ -89,6 +90,8 @@ function closeSearchBox() {
   observer = null;
   highlightContainer?.remove();
   highlightContainer = null;
+  highlightNodesMap.clear();
+  prevPositionsMap.clear();
   isOpen = false;
 }
 
@@ -137,6 +140,7 @@ function queryText(e: any) {
     filterVisibleTextNodes(resultsMap),
     keyword,
   );
+  console.log('positionsMap=', resultsMap, positionsMap, keyword);
   renderTextHighlight(positionsMap);
   subscriber = hitTextSubscriber();
   if (searchBox?.shadowRoot?.querySelector('#search-result')) {
@@ -193,41 +197,58 @@ function requestAnimationFrameLoop(callback: () => void) {
 }
 
 function getTextPositionsMap(textNodes: Text[], keyword: string) {
-  const textPositionsMap: Map<Text, Position> = new Map();
+  const textPositionsMap: Map<Text, Position[]> = new Map();
   textNodes.forEach((textNode) => {
     // 确保是文本节点
-    const range = document.createRange();
-    let startIndex = -1;
-    const text = textNode.textContent || '';
-    if (matchCase === MatchCaseEnum.Match) {
-      startIndex = text.indexOf(keyword);
-    } else {
-      startIndex = text.toLowerCase().indexOf(keyword.toLowerCase());
+    const startIndexs = [];
+    const text = textNode.textContent?.trim();
+    // 在这里，可能个文字节点里面有多个与keyword匹配的文本，所以需要找到所有匹配的文本
+    if (text) {
+      if (matchCase === MatchCaseEnum.Match) {
+        let startIndex = text.indexOf(keyword);
+        while (startIndex > -1) {
+          startIndexs.push(startIndex);
+          startIndex = text.indexOf(keyword, startIndex + keyword.length);
+        }
+      } else {
+        let startIndex = text.toLowerCase().indexOf(keyword.toLowerCase());
+        while (startIndex > -1) {
+          startIndexs.push(startIndex);
+          startIndex = text
+            .toLowerCase()
+            .indexOf(keyword.toLowerCase(), startIndex + keyword.length);
+          console.log(text, keyword, startIndex);
+        }
+      }
     }
-    if (startIndex > -1) {
-      range.setStart(textNode, startIndex); // 从文本节点的开始位置
-      range.setEnd(textNode, startIndex + keyword.length); // 到文本节点的结束位置
-    } else {
-      range.setStart(textNode, 0); // 从文本节点的开始位置
-      range.setEnd(textNode, textNode.length); // 到文本节点的结束位置
-    }
-    // 获取范围的边界矩形
-    const rect = range.getBoundingClientRect();
-    textPositionsMap.set(textNode, {
-      top: rect.top,
-      left: rect.left,
-      width: rect.width,
-      height: rect.height,
-      transformX: 0,
-      transformY: 0,
+    const positions = [] as Position[];
+    startIndexs.forEach((startIndex) => {
+      const range = document.createRange();
+      if (startIndex > -1) {
+        range.setStart(textNode, startIndex); // 从文本节点的开始位置
+        range.setEnd(textNode, startIndex + keyword.length); // 到文本节点的结束位置
+      } else {
+        range.setStart(textNode, 0); // 从文本节点的开始位置
+        range.setEnd(textNode, textNode.length); // 到文本节点的结束位置
+      }
+      // 获取范围的边界矩形
+      const rect = range.getBoundingClientRect();
+      positions.push({
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+        transformX: 0,
+        transformY: 0,
+      });
     });
+    textPositionsMap.set(textNode, positions);
   });
 
   return textPositionsMap;
 }
 
-function renderTextHighlight(nextPositionsMap: Map<Text, Position>) {
-  if (nextPositionsMap?.size === 0) return;
+function renderTextHighlight(nextPositionsMap: Map<Text, Position[]>) {
   if (!highlightContainer) {
     highlightContainer = document.createElement('div');
     highlightContainer.id = 'highlight';
@@ -242,49 +263,109 @@ function renderTextHighlight(nextPositionsMap: Map<Text, Position>) {
     document.documentElement.appendChild(highlightContainer);
   }
   for (const textNode of nextPositionsMap.keys()) {
-    const prevPosition = prevPositionsMap.get(textNode);
-    const nextPosition = nextPositionsMap.get(textNode)!;
+    const prevPositions = prevPositionsMap.get(textNode);
+    const nextPositions = nextPositionsMap.get(textNode)!;
 
-    if (prevPosition) {
-      // 如果上一次渲染有并且位置都一样，那么就不变更
-      if (isSameHighlight(prevPosition, nextPosition)) {
-        return;
-      } else {
-        const highlightNode = highlightNodesMap.get(textNode)!;
-        const x = nextPosition.left - prevPosition.left;
-        const y = nextPosition.top - prevPosition.top;
-        const transformX = prevPosition.transformX + x;
-        const transformY = prevPosition.transformY + y;
-        nextPositionsMap.set(textNode, {
-          ...nextPosition,
-          transformX,
-          transformY,
-        });
-        highlightNode.style.transform = `translate3d(${transformX}px,${transformY}px,0)`;
-        highlightNode.style.width = `${nextPosition.width}px`;
-        highlightNode.style.height = `${nextPosition.height}px`;
+    if (prevPositions) {
+      // 如果上一次渲染有并且位置不一样，那么就更新位置
+      for (let i = 0; i < nextPositions.length; i++) {
+        if (isSameHighlight(prevPositions[i], nextPositions[i])) {
+          continue;
+        }
+        if (!prevPositions[i]) {
+          // 创建后面剩余的
+          renderTextHighlightNode(textNode, nextPositions[i], i);
+        } else {
+          updateTextHighlightNode(
+            textNode,
+            prevPositions[i],
+            nextPositions[i],
+            i,
+          );
+        }
+      }
+      const cutLength =
+        prevPositions.length - nextPositions.length > 0
+          ? prevPositions.length - nextPositions.length
+          : 0;
+      if (cutLength > 0) {
+        for (let i = nextPositions.length - 1; i < prevPositions?.length; i++) {
+          removeTextHighlightNode(textNode, i);
+        }
+        const highlightNodes = highlightNodesMap.get(textNode)!;
+        highlightNodesMap.set(
+          textNode,
+          highlightNodes.filter(
+            (_, index) => !penddingCutHighlightNodesIndexs?.includes(index),
+          ),
+        );
       }
     } else {
-      const highlight = document.createElement('div');
-      highlight.style.position = 'absolute';
-      highlight.style.top = `${nextPosition.top}px`;
-      highlight.style.left = `${nextPosition.left}px`;
-      highlight.style.width = `${nextPosition.width}px`;
-      highlight.style.height = `${nextPosition.height}px`;
-      highlight.style.backgroundColor = config.color;
-      highlight.style.opacity = '0.6';
-      highlightContainer!.appendChild(highlight);
-      highlightNodesMap.set(textNode, highlight);
+      // 如果这个文本节点没有上一次渲染，那么就渲染所有位置
+      nextPositions.forEach((position, index) => {
+        renderTextHighlightNode(textNode, position, index);
+      });
     }
   }
   // 清除已经不存在的highlight
+  console.log('prevPositionsMap=', prevPositionsMap);
   for (const textNode of prevPositionsMap.keys()) {
     if (!nextPositionsMap.get(textNode)) {
-      highlightContainer.removeChild(highlightNodesMap.get(textNode)!);
+      const highlightNodes = highlightNodesMap.get(textNode)!;
+      console.log(highlightNodesMap, textNode, highlightNodes);
+      highlightNodes.forEach((highlight) => {
+        highlightContainer!.removeChild(highlight);
+      });
       highlightNodesMap.delete(textNode);
     }
   }
   prevPositionsMap = nextPositionsMap;
+}
+
+function renderTextHighlightNode(
+  textNode: Text,
+  position: Position,
+  index: number,
+) {
+  const highlight = document.createElement('div');
+  highlight.style.position = 'absolute';
+  highlight.style.top = `${position.top}px`;
+  highlight.style.left = `${position.left}px`;
+  highlight.style.width = `${position.width}px`;
+  highlight.style.height = `${position.height}px`;
+  highlight.style.backgroundColor = config.color;
+  highlight.style.opacity = '0.6';
+  highlight.setAttribute('data-index', index.toString());
+  highlightContainer!.appendChild(highlight);
+  let highlightNodes = highlightNodesMap.get(textNode) || [];
+  highlightNodes[index] = highlight;
+  highlightNodesMap.set(textNode, highlightNodes);
+}
+
+function updateTextHighlightNode(
+  textNode: Text,
+  prevPosition: Position,
+  nextPosition: Position,
+  index: number,
+) {
+  const highlightNodes = highlightNodesMap.get(textNode)!;
+  const highlight = highlightNodes[index];
+  if (highlight) {
+    const x = nextPosition.left - prevPosition.left;
+    const y = nextPosition.top - prevPosition.top;
+    const transformX = prevPosition.transformX + x;
+    const transformY = prevPosition.transformY + y;
+    highlight.style.transform = `translate3d(${transformX}px,${transformY}px,0)`;
+    highlight.style.width = `${nextPosition.width}px`;
+    highlight.style.height = `${nextPosition.height}px`;
+  }
+}
+
+function removeTextHighlightNode(textNode: Text, index: number) {
+  const highlightNodes = highlightNodesMap.get(textNode)!;
+  const highlight = highlightNodes[index];
+  highlightContainer!.removeChild(highlight);
+  penddingCutHighlightNodesIndexs.push(index);
 }
 
 window.addEventListener('load', () => {
