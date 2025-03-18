@@ -34,9 +34,9 @@ export default [
     ],
   },
   {
-    input: 'src/content-scripts/highlight.ts', // insert-script 输入文件
+    input: 'src/content-scripts/highlight-box.ts', // insert-script 输入文件
     output: {
-      file: 'dist/content-scripts/highlight.js', // 输出到特定目录
+      file: 'dist/content-scripts/highlight-box.js', // 输出到特定目录
       format: 'iife', // 输出格式
     },
     plugins: [

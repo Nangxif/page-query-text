@@ -21,21 +21,72 @@ function queryAllText() {
   const body = document.body;
   const elements = body.querySelectorAll('*') as unknown as HTMLElement[];
   recursionElementChildNodes(elements);
+  console.log('textContentParentNodesMap=', textContentParentNodesMap);
+}
+
+function isElementVisible(element: HTMLElement) {
+  let current = element;
+
+  while (current) {
+    if (current.nodeType === Node.ELEMENT_NODE) {
+      // 跳过特定标签
+      if (
+        current.nodeName === 'SCRIPT' ||
+        current.nodeName === 'STYLE' ||
+        current.nodeName === 'HIGHLIGHT'
+      ) {
+        return false;
+      }
+
+      const style = window.getComputedStyle(current);
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        style.opacity === '0'
+      ) {
+        return false;
+      }
+    }
+    current = current.parentNode as HTMLElement;
+  }
+
+  return true;
 }
 
 function recursionElementChildNodes(elements: HTMLElement[]) {
-  elements.forEach((element) => {
-    if (element.nodeType === Node.TEXT_NODE && !!element.textContent) {
-      textContentParentNodesMap.set(
-        element.parentNode as unknown as HTMLElement,
-        element.textContent,
-      );
-    } else if (element?.childNodes?.length > 0) {
+  for (let i = 0; i < elements.length; i++) {
+    const element = elements[i];
+    // 检查元素是否可见
+    if (element.nodeType === Node.ELEMENT_NODE) {
+      if (
+        element.nodeName === 'SCRIPT' ||
+        element.nodeName === 'STYLE' ||
+        element.nodeName === 'HIGHLIGHT'
+      ) {
+        continue;
+      }
+    }
+
+    // 对于所有节点，检查它们是否在可见的祖先链中
+    if (!isElementVisible(element)) {
+      continue;
+    }
+
+    // 处理文本节点
+    if (element.nodeType === Node.TEXT_NODE) {
+      const text = element.textContent?.trim();
+      if (text) {
+        textContentParentNodesMap.set(element.parentNode as HTMLElement, text);
+      }
+    } else if (
+      element.nodeType === Node.ELEMENT_NODE &&
+      element.childNodes?.length > 0
+    ) {
       recursionElementChildNodes(
-        element?.childNodes as unknown as HTMLElement[],
+        Array.from(element.childNodes) as HTMLElement[],
       );
     }
-  });
+  }
 }
 
 // 往页面插入一个悬浮框
@@ -118,7 +169,6 @@ function getTextNodes(node: Node) {
 function highlightKeyword(parentNode: Node, keyword: string) {
   const textNodes = getTextNodes(parentNode);
   // 处理每个文本节点
-  console.log('textNodes=', parentNode, textNodes);
   textNodes.forEach((textNode) => {
     const text = textNode.textContent || '';
     if (text.includes(keyword)) {
@@ -133,15 +183,26 @@ function highlightKeyword(parentNode: Node, keyword: string) {
         }
         // 在非最后一部分后添加高亮关键词
         if (i < parts.length - 1) {
-          const highlightEl = document.createElement('highlight');
-          highlightEl.setAttribute(
-            'data-styles',
-            JSON.stringify({
-              ...getTextRelatedStyles(textNode),
-              'background-color': config.color,
-            }),
-          );
-          highlightEl.textContent = keyword;
+          const highlightEl = document.createElement('highlight-box');
+          const styles = {
+            ...getTextRelatedStyles(textNode),
+            'background-color': config.color,
+          };
+          let containerStylesCSS = '';
+          Object.entries(styles).forEach(([styleName, styleValue]) => {
+            containerStylesCSS += `${styleName
+              .replace(/([A-Z])/g, '-$1')
+              .toLowerCase()}: ${styleValue}; `;
+          });
+          const styleElement = document.createElement('style');
+          styleElement.textContent = `
+            ::slotted(*) {
+              ${containerStylesCSS}
+            }
+          `;
+          const keywordTextNode = document.createTextNode(keyword);
+          highlightEl.appendChild(styleElement);
+          highlightEl.appendChild(keywordTextNode);
           fragment.appendChild(highlightEl);
         }
       }
@@ -153,13 +214,22 @@ function highlightKeyword(parentNode: Node, keyword: string) {
 
 window.addEventListener('load', () => {
   // 生成script
-  const script = document.createElement('script');
+  const floatingSearchBoxScript = document.createElement('script');
   // 使用chrome.runtime.getURL生成url
-  script.src = chrome.runtime.getURL(
+  floatingSearchBoxScript.src = chrome.runtime.getURL(
     'content-scripts/floating-search-box.js', // 注意：这里的路径也是基于插件项目根目录的路径
   );
   // 将script插入至页面的html文档中，使其运行环境是网页html
-  document.documentElement.appendChild(script);
+  document.documentElement.appendChild(floatingSearchBoxScript);
+
+  // 生成script
+  const highlightBoxScript = document.createElement('script');
+  // 使用chrome.runtime.getURL生成url
+  highlightBoxScript.src = chrome.runtime.getURL(
+    'content-scripts/highlight-box.js', // 注意：这里的路径也是基于插件项目根目录的路径
+  );
+  // 将script插入至页面的html文档中，使其运行环境是网页html
+  document.documentElement.appendChild(highlightBoxScript);
   // 先获取本地存储的信息
   chrome.storage.sync.get(['shortcut', 'color', 'fixed'], (result) => {
     config = {
