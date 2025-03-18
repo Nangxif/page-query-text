@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-loop-func */
 import { defaultValues } from '@/constants';
 import { MatchCaseEnum } from '@/types';
-import { getTextRelatedStyles } from '@/utils';
+import { debounceFn, getTextRelatedStyles } from '@/utils';
 import { FloatingSearchBoxElement } from './floating-search-box';
 
 // 是否打开搜索工具
@@ -21,7 +21,6 @@ function queryAllText() {
   const body = document.body;
   const elements = body.querySelectorAll('*') as unknown as HTMLElement[];
   recursionElementChildNodes(elements);
-  console.log('textContentParentNodesMap=', textContentParentNodesMap);
 }
 
 function isElementVisible(element: HTMLElement) {
@@ -104,7 +103,8 @@ function insertSearchBox() {
       }
     });
   });
-  searchBox.addEventListener('search', queryText);
+  const queryTextFn = debounceFn(queryText, 500);
+  searchBox.addEventListener('search', queryTextFn);
   searchBox.addEventListener('matchcasechange', matchCaseChange);
   searchBox.addEventListener('close', closeSearchBox);
 }
@@ -125,7 +125,10 @@ function closeSearchBox() {
 }
 
 function queryText(e: any) {
+  console.log(e);
   queryAllText();
+  // 先把页面上的节点先恢复原状
+  resetNeedRenderHighlightParentNodes();
   needRenderHighlightParentNodes = [];
   keyword = typeof e === 'string' ? e : e.detail;
   // 在下面这个map里面搜索出对应的keyword
@@ -154,6 +157,23 @@ function queryText(e: any) {
       needRenderHighlightParentNodes.length
         ? `第${currentIndex}项，共${needRenderHighlightParentNodes.length}项`
         : searchResultEmptyText;
+  }
+}
+
+function resetNeedRenderHighlightParentNodes() {
+  for (let i = 0; i < needRenderHighlightParentNodes.length; i++) {
+    const parentNode = needRenderHighlightParentNodes[i];
+    // 查找所有的 highlight 元素
+    const highlightElements = parentNode.querySelectorAll('highlight');
+
+    // 替换每个 highlight 元素为 "keyword" 文本
+    highlightElements.forEach((element) => {
+      // 创建文本节点
+      const textNode = document.createTextNode(keyword);
+
+      // 将 highlight 元素替换为文本节点
+      element.parentNode!.replaceChild(textNode, element);
+    });
   }
 }
 // 获取所有文本节点
@@ -188,21 +208,11 @@ function highlightKeyword(parentNode: Node, keyword: string) {
             ...getTextRelatedStyles(textNode),
             'background-color': config.color,
           };
-          let containerStylesCSS = '';
-          Object.entries(styles).forEach(([styleName, styleValue]) => {
-            containerStylesCSS += `${styleName
-              .replace(/([A-Z])/g, '-$1')
-              .toLowerCase()}: ${styleValue}; `;
-          });
-          const styleElement = document.createElement('style');
-          styleElement.textContent = `
-            ::slotted(*) {
-              ${containerStylesCSS}
-            }
-          `;
+          const keywordTextNodeSpan = document.createElement('span');
           const keywordTextNode = document.createTextNode(keyword);
-          highlightEl.appendChild(styleElement);
-          highlightEl.appendChild(keywordTextNode);
+          highlightEl.setAttribute('data-styles', JSON.stringify(styles));
+          keywordTextNodeSpan.appendChild(keywordTextNode);
+          highlightEl.appendChild(keywordTextNodeSpan);
           fragment.appendChild(highlightEl);
         }
       }

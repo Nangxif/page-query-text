@@ -44,3 +44,36 @@ export const getTextRelatedStyles = (textNode: Text) => {
 
   return textStyles;
 };
+
+export const debounceFn = <T>(
+  cb: (params: T) => void | (() => void),
+  timeout: number,
+  // 当太长时间无法执行callback而又需要强制执行callback，可以设置这个参数
+  forceUpdateTime?: number,
+) => {
+  let timer: NodeJS.Timeout;
+  let forceUpdateTimer: NodeJS.Timeout;
+  return function (params?: T) {
+    if (!forceUpdateTimer && forceUpdateTime) {
+      forceUpdateTimer = setTimeout(() => {
+        cb(params!);
+        clearTimeout(forceUpdateTimer);
+        forceUpdateTimer = null!;
+      }, forceUpdateTime);
+    }
+    if (timer) {
+      clearTimeout(timer);
+      timer = null!;
+      return;
+    }
+    timer = setTimeout(() => {
+      cb(params!);
+      clearTimeout(timer);
+      timer = null!;
+      if (forceUpdateTimer) {
+        clearTimeout(forceUpdateTimer);
+        forceUpdateTimer = null!;
+      }
+    }, timeout);
+  };
+};
