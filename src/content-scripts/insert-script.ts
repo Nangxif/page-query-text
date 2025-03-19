@@ -2,18 +2,22 @@
 /* eslint-disable @typescript-eslint/no-loop-func */
 import { defaultValues } from '@/constants';
 import { MatchCaseEnum } from '@/types';
-import { debounceFn, getTextRelatedStyles } from '@/utils';
+import { debounceFn, getTextRelatedStyles, splitText } from '@/utils';
 import { FloatingSearchBoxElement } from './floating-search-box';
 
 // 是否打开搜索工具
 let isOpen = false;
+// 默认的配置
 let config = defaultValues;
 const searchResultEmptyText = '无结果';
 let currentIndex = 1;
 let searchBox = null as FloatingSearchBoxElement | null;
 let matchCase = MatchCaseEnum.DontMatch;
-const textContentParentNodesMap = new Map<HTMLElement, string>();
-let needRenderHighlightParentNodes: HTMLElement[] = [];
+const textContentParentNodesMap = new Map<HTMLElement, string[]>();
+let needRenderHighlightParentNodes: {
+  parentNode: HTMLElement;
+  originChildNodes: Node[];
+}[] = [];
 let keyword = '';
 
 function queryAllText() {
@@ -75,7 +79,11 @@ function recursionElementChildNodes(elements: HTMLElement[]) {
     if (element.nodeType === Node.TEXT_NODE) {
       const text = element.textContent?.trim();
       if (text) {
-        textContentParentNodesMap.set(element.parentNode as HTMLElement, text);
+        const texts =
+          textContentParentNodesMap.get(element.parentNode as HTMLElement) ||
+          [];
+        texts.push(text);
+        textContentParentNodesMap.set(element.parentNode as HTMLElement, texts);
       }
     } else if (
       element.nodeType === Node.ELEMENT_NODE &&
@@ -106,7 +114,25 @@ function insertSearchBox() {
   const queryTextFn = debounceFn(queryText, 500);
   searchBox.addEventListener('search', queryTextFn);
   searchBox.addEventListener('matchcasechange', matchCaseChange);
+  searchBox.addEventListener('searchprevious', searchPrevious);
+  searchBox.addEventListener('searchnext', searchNext);
   searchBox.addEventListener('close', closeSearchBox);
+}
+
+function searchPrevious() {
+  currentIndex =
+    currentIndex - 1 < 1
+      ? needRenderHighlightParentNodes.length
+      : currentIndex - 1;
+  renderSearchResult(currentIndex, needRenderHighlightParentNodes.length);
+}
+
+function searchNext() {
+  currentIndex =
+    currentIndex + 1 > needRenderHighlightParentNodes.length
+      ? 1
+      : currentIndex + 1;
+  renderSearchResult(currentIndex, needRenderHighlightParentNodes.length);
 }
 
 function matchCaseChange(e: any) {
@@ -119,61 +145,73 @@ function closeSearchBox() {
   searchBox?.remove();
   searchBox = null;
   textContentParentNodesMap.clear();
+  matchCase = MatchCaseEnum.DontMatch;
   needRenderHighlightParentNodes = [];
   keyword = '';
+  currentIndex = 1;
   isOpen = false;
 }
 
 function queryText(e: any) {
-  console.log(e);
-  queryAllText();
   // 先把页面上的节点先恢复原状
   resetNeedRenderHighlightParentNodes();
   needRenderHighlightParentNodes = [];
+  queryAllText();
   keyword = typeof e === 'string' ? e : e.detail;
   // 在下面这个map里面搜索出对应的keyword
   for (const parentNode of textContentParentNodesMap.keys()) {
-    const value = textContentParentNodesMap.get(parentNode);
-    if (keyword && value) {
-      if (matchCase === MatchCaseEnum.Match && value.includes(keyword)) {
-        needRenderHighlightParentNodes.push(parentNode);
+    const texts = textContentParentNodesMap.get(parentNode);
+    if (keyword && texts && texts.length > 0) {
+      if (
+        matchCase === MatchCaseEnum.Match &&
+        texts?.some((text) => text.includes(keyword))
+      ) {
+        const originChildNodes = Array.from(parentNode.childNodes).map((node) =>
+          node.cloneNode(true),
+        );
+        needRenderHighlightParentNodes.push({
+          parentNode,
+          originChildNodes,
+        });
       } else if (
         matchCase === MatchCaseEnum.DontMatch &&
-        value?.toLowerCase().includes(keyword?.toLowerCase())
+        texts?.some((text) =>
+          text?.toLowerCase().includes(keyword?.toLowerCase()),
+        )
       ) {
-        needRenderHighlightParentNodes.push(parentNode);
+        const originChildNodes = Array.from(parentNode.childNodes).map((node) =>
+          node.cloneNode(true),
+        );
+        needRenderHighlightParentNodes.push({
+          parentNode,
+          originChildNodes,
+        });
       }
     }
   }
 
   // 所有相关父节点算出来之后，更换里面的内容
   for (let i = 0; i < needRenderHighlightParentNodes.length; i++) {
-    const parentNode = needRenderHighlightParentNodes[i];
-    highlightKeyword(parentNode, keyword);
+    const node = needRenderHighlightParentNodes[i];
+    highlightKeyword(node.parentNode, keyword);
   }
+  renderSearchResult(currentIndex, needRenderHighlightParentNodes.length);
+}
 
+function renderSearchResult(currentIndex: number, total: number) {
   if (searchBox?.shadowRoot?.querySelector('#search-result')) {
-    searchBox.shadowRoot.querySelector('#search-result')!.textContent =
-      needRenderHighlightParentNodes.length
-        ? `第${currentIndex}项，共${needRenderHighlightParentNodes.length}项`
-        : searchResultEmptyText;
+    searchBox.shadowRoot.querySelector('#search-result')!.textContent = total
+      ? `第${currentIndex}项，共${total}项`
+      : searchResultEmptyText;
   }
 }
 
 function resetNeedRenderHighlightParentNodes() {
   for (let i = 0; i < needRenderHighlightParentNodes.length; i++) {
-    const parentNode = needRenderHighlightParentNodes[i];
-    // 查找所有的 highlight 元素
-    const highlightElements = parentNode.querySelectorAll('highlight');
-
-    // 替换每个 highlight 元素为 "keyword" 文本
-    highlightElements.forEach((element) => {
-      // 创建文本节点
-      const textNode = document.createTextNode(keyword);
-
-      // 将 highlight 元素替换为文本节点
-      element.parentNode!.replaceChild(textNode, element);
-    });
+    const node = needRenderHighlightParentNodes[i];
+    // 获取源节点的所有子节点
+    const childNodes = node.originChildNodes;
+    node.parentNode.replaceChildren(...childNodes);
   }
 }
 // 获取所有文本节点
@@ -191,8 +229,18 @@ function highlightKeyword(parentNode: Node, keyword: string) {
   // 处理每个文本节点
   textNodes.forEach((textNode) => {
     const text = textNode.textContent || '';
-    if (text.includes(keyword)) {
-      const parts = text.split(keyword);
+    if (
+      (matchCase === MatchCaseEnum.Match && text.includes(keyword)) ||
+      (matchCase === MatchCaseEnum.DontMatch &&
+        text.toLowerCase().includes(keyword.toLowerCase()))
+    ) {
+      const parts = splitText(text, keyword, matchCase);
+      const matchKeywords = Array.from(
+        text.matchAll(
+          new RegExp(keyword, matchCase === MatchCaseEnum.Match ? 'mg' : 'img'),
+        ),
+      ).map((item) => item.index);
+      console.log('matchKeywords=', matchKeywords);
       const fragment = document.createDocumentFragment();
 
       // 重建节点结构
@@ -206,10 +254,19 @@ function highlightKeyword(parentNode: Node, keyword: string) {
           const highlightEl = document.createElement('highlight-box');
           const styles = {
             ...getTextRelatedStyles(textNode),
-            'background-color': config.color,
+            'background-color': config.bgColor,
+            color: config.color,
           };
           const keywordTextNodeSpan = document.createElement('span');
-          const keywordTextNode = document.createTextNode(keyword);
+          const originText = text.slice(matchKeywords[i], keyword.length);
+          console.log(
+            'originText=',
+            text,
+            matchKeywords[i],
+            keyword.length,
+            originText,
+          );
+          const keywordTextNode = document.createTextNode(originText);
           highlightEl.setAttribute('data-styles', JSON.stringify(styles));
           keywordTextNodeSpan.appendChild(keywordTextNode);
           highlightEl.appendChild(keywordTextNodeSpan);
@@ -241,36 +298,40 @@ window.addEventListener('load', () => {
   // 将script插入至页面的html文档中，使其运行环境是网页html
   document.documentElement.appendChild(highlightBoxScript);
   // 先获取本地存储的信息
-  chrome.storage.sync.get(['shortcut', 'color', 'fixed'], (result) => {
-    config = {
-      ...defaultValues,
-      ...result,
-    };
-    const { shortcut } = config;
-    console.log('====本地缓存已成功获取，可以继续执行后续逻辑====');
-    console.log(`请按快捷键: ${shortcut.join('+')}打开搜索工具`);
-    window.addEventListener('keydown', (e) => {
-      // 把ctrlKey、shiftKey、altKey、metaKey筛选出来
-      const shortcutWithSpecialKeys = shortcut.filter((item) =>
-        ['ctrlKey', 'shiftKey', 'altKey', 'metaKey'].includes(item),
-      );
-      const shortcutKeys = shortcut.filter(
-        (item) => !['ctrlKey', 'shiftKey', 'altKey', 'metaKey'].includes(item),
-      );
-      if (
-        shortcutWithSpecialKeys.every(
-          (item: any) => e[item as keyof KeyboardEvent],
-        ) &&
-        shortcutKeys.every(
-          (item: any) => e.key.toLowerCase() === item.toLowerCase(),
-        )
-      ) {
-        console.log('成功打开搜索工具');
-        if (!isOpen) {
-          isOpen = true;
-          insertSearchBox();
+  chrome.storage.sync.get(
+    ['shortcut', 'color', 'bgColor', 'fixed'],
+    (result) => {
+      config = {
+        ...defaultValues,
+        ...result,
+      };
+      const { shortcut } = config;
+      console.log('====本地缓存已成功获取，可以继续执行后续逻辑====');
+      console.log(`请按快捷键: ${shortcut.join('+')}打开搜索工具`);
+      window.addEventListener('keydown', (e) => {
+        // 把ctrlKey、shiftKey、altKey、metaKey筛选出来
+        const shortcutWithSpecialKeys = shortcut.filter((item) =>
+          ['ctrlKey', 'shiftKey', 'altKey', 'metaKey'].includes(item),
+        );
+        const shortcutKeys = shortcut.filter(
+          (item) =>
+            !['ctrlKey', 'shiftKey', 'altKey', 'metaKey'].includes(item),
+        );
+        if (
+          shortcutWithSpecialKeys.every(
+            (item: any) => e[item as keyof KeyboardEvent],
+          ) &&
+          shortcutKeys.every(
+            (item: any) => e.key.toLowerCase() === item.toLowerCase(),
+          )
+        ) {
+          console.log('成功打开搜索工具');
+          if (!isOpen) {
+            isOpen = true;
+            insertSearchBox();
+          }
         }
-      }
-    });
-  });
+      });
+    },
+  );
 });

@@ -1,8 +1,10 @@
 export const defaultValues = {
   shortcut: ['ctrlKey', 'f'],
   // 文字高亮常用的颜色
-  color: '#FFC107',
-  selectedColor: '#FFC107',
+  color: '#000000',
+  bgColor: '#FFC107',
+  selectedColor: '#000000',
+  selectedBgColor: '#FF0000',
   fixed: true,
 };
 

@@ -222,6 +222,9 @@ class FloatingSearchBox extends HTMLElement {
         backgroundColor: 'transparent',
       });
     };
+    prevButtonBox.onclick = () => {
+      this.dispatchEvent(new CustomEvent('searchprevious'));
+    };
     const prevButtonIcon = document.createElement('img');
     prevButtonIcon.src = PrevIcon;
     setStyle(prevButtonIcon, {
@@ -250,6 +253,9 @@ class FloatingSearchBox extends HTMLElement {
       setStyle(nextButtonBox, {
         backgroundColor: 'transparent',
       });
+    };
+    nextButtonBox.onclick = () => {
+      this.dispatchEvent(new CustomEvent('searchnext'));
     };
     const nextButtonIcon = document.createElement('img');
     nextButtonIcon.src = NextIcon;

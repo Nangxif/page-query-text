@@ -1,4 +1,5 @@
 import { textStyleProperties } from '@/constants';
+import { MatchCaseEnum } from '@/types';
 
 export const setStyle = (
   element: HTMLElement,
@@ -64,7 +65,6 @@ export const debounceFn = <T>(
     if (timer) {
       clearTimeout(timer);
       timer = null!;
-      return;
     }
     timer = setTimeout(() => {
       cb(params!);
@@ -76,4 +76,18 @@ export const debounceFn = <T>(
       }
     }, timeout);
   };
+};
+
+export const splitText = (
+  text: string,
+  keyword: string,
+  matchCase: MatchCaseEnum,
+) => {
+  if (matchCase === MatchCaseEnum.Match) {
+    return text.split(keyword);
+  } else {
+    // 不区分大小写，使用正则表达式拆分
+    const regex = new RegExp(keyword, 'i'); // 'i' 表示不区分大小写
+    return text.split(regex);
+  }
 };

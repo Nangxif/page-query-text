@@ -15,7 +15,9 @@ const { Item: FormItem, useForm } = Form;
 type FormValues = {
   shortcut: string[];
   color: string;
+  bgColor: string;
   selectedColor: string;
+  selectedBgColor: string;
   fixed: boolean;
 };
 
@@ -25,7 +27,14 @@ const Sidebar: React.FC = () => {
   // 初始化数据
   useEffect(() => {
     chrome.storage.sync.get(
-      ['shortcut', 'color', 'selectedColor', 'fixed'],
+      [
+        'shortcut',
+        'color',
+        'bgColor',
+        'selectedColor',
+        'selectedBgColor',
+        'fixed',
+      ],
       (result) => {
         form.setFieldsValue(result);
       },
@@ -35,12 +44,18 @@ const Sidebar: React.FC = () => {
   const handleSubmit = (values: FormValues) => {
     const colorMetaColor = (values.color as any).metaColor;
     const color = `rgba(${colorMetaColor?.r},${colorMetaColor?.g},${colorMetaColor?.b},${colorMetaColor?.a})`;
+    const bgColorMetaColor = (values.bgColor as any).metaColor;
+    const bgColor = `rgba(${bgColorMetaColor?.r},${bgColorMetaColor?.g},${bgColorMetaColor?.b},${bgColorMetaColor?.a})`;
     const selectedColorMetaColor = (values.selectedColor as any).metaColor;
     const selectedColor = `rgba(${selectedColorMetaColor?.r},${selectedColorMetaColor?.g},${selectedColorMetaColor?.b},${selectedColorMetaColor?.a})`;
+    const selectedBgColorMetaColor = (values.selectedBgColor as any).metaColor;
+    const selectedBgColor = `rgba(${selectedBgColorMetaColor?.r},${selectedBgColorMetaColor?.g},${selectedBgColorMetaColor?.b},${selectedBgColorMetaColor?.a})`;
     chrome.storage.sync.set({
       shortcut: values.shortcut,
       color,
+      bgColor,
       selectedColor,
+      selectedBgColor,
       fixed: values.fixed,
     });
     message.success('保存成功，刷新页面之后配置才可生效');
@@ -68,6 +83,7 @@ const Sidebar: React.FC = () => {
     >
       <Form
         form={form}
+        layout="vertical"
         initialValues={defaultValues}
         className={styles.container}
         onFinish={handleSubmit}
@@ -104,8 +120,22 @@ const Sidebar: React.FC = () => {
           <ColorPicker format="rgb" />
         </FormItem>
         <FormItem
+          label="命中的文字背景颜色"
+          name="bgColor"
+          className={styles['form-item']}
+        >
+          <ColorPicker format="rgb" />
+        </FormItem>
+        <FormItem
           label="当前选中的文字颜色"
           name="selectedColor"
+          className={styles['form-item']}
+        >
+          <ColorPicker format="rgb" />
+        </FormItem>
+        <FormItem
+          label="当前选中的文字背景颜色"
+          name="selectedBgColor"
           className={styles['form-item']}
         >
           <ColorPicker format="rgb" />
