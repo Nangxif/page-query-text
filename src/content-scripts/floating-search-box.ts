@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-this-alias */
 import { MatchCaseEnum } from '@/types';
 import { setStyle } from '@/utils';
 import CloseIcon from '../assets/images/close-icon.png';
 import DontMatchCaseIcon from '../assets/images/dont-match-case-icon.png';
+import DragIcon from '../assets/images/drag-icon.png';
 import MatchCaseIcon from '../assets/images/match-case-icon.png';
 import NextIcon from '../assets/images/next-icon.png';
 import PrevIcon from '../assets/images/prev-icon.png';
@@ -10,17 +12,31 @@ import SettingsIcon from '../assets/images/setting-icon.png';
 // 定义一个悬浮搜索框的Web Component
 class FloatingSearchBox extends HTMLElement {
   private floatingBox: HTMLElement | null = null;
+  private dragButton: HTMLElement | null = null;
   private searchResultId: string = `search-result`;
   private matchCase = MatchCaseEnum.DontMatch;
+  private startX = 0;
+  private startY = 0;
+  private translateX = 0;
+  private translateY = 0;
+
+  static get observedAttributes() {
+    return ['data-fixed', 'data-startx', 'data-starty'];
+  }
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
     this.createFloatingBox();
     console.log('====悬浮搜索框已创建====');
   }
 
   private createFloatingBox() {
+    this.startX = this.dataset.startx ? Number(this.dataset.startx) : 0;
+    this.startY = this.dataset.starty ? Number(this.dataset.starty) : 0;
     // 创建悬浮框
     this.floatingBox = document.createElement('div');
     setStyle(this.floatingBox, {
@@ -29,14 +45,57 @@ class FloatingSearchBox extends HTMLElement {
       position: 'fixed',
       top: '20px',
       right: '20px',
-      width: 'calc(100vw - 40px)',
+      width: 'calc(100vw - 60px)',
       maxWidth: '400px',
       padding: '6px 4px',
       backgroundColor: 'rgb(32 32 32)',
       borderRadius: '4px',
       boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
       zIndex: '1000000',
+      transform: `translate3d(${this.startX}px,${this.startY}px,0)`,
     });
+
+    // 拖拽按钮
+    this.dragButton = document.createElement('div');
+    setStyle(this.dragButton, {
+      width: '16px',
+      height: '16px',
+      cursor: this.dataset.fixed === 'true' ? 'not-allowed' : 'pointer',
+      userSelect: 'none',
+      backgroundImage: `url(${DragIcon})`,
+      backgroundSize: '100% 100%',
+    });
+
+    const that = this;
+    function handleMouseMove(e: any) {
+      setStyle(that.floatingBox!, {
+        transform: `translate3d(${
+          that.startX + e.clientX - that.translateX
+        }px,${that.startY + e.clientY - that.translateY}px,0)`,
+      });
+    }
+
+    this.dragButton.addEventListener('mousedown', (e) => {
+      if (that.dataset.fixed === 'true') return; // 如果固定则不拖拽
+      that.translateX = e.clientX;
+      that.translateY = e.clientY;
+      document.addEventListener('mousemove', handleMouseMove);
+    });
+
+    this.dragButton.addEventListener('mouseup', (e) => {
+      that.startX = that.startX + e.clientX - that.translateX;
+      that.startY = that.startY + e.clientY - that.translateY;
+      that.dispatchEvent(
+        new CustomEvent('move', {
+          detail: {
+            startX: that.startX,
+            startY: that.startY,
+          },
+        }),
+      );
+      document.removeEventListener('mousemove', handleMouseMove);
+    });
+    this.floatingBox.appendChild(this.dragButton);
 
     // 设置按钮
     const settingButtonBox = document.createElement('div');
@@ -63,12 +122,13 @@ class FloatingSearchBox extends HTMLElement {
     settingButtonBox.onclick = () => {
       this.dispatchEvent(new CustomEvent('setting'));
     };
-    const settingButtonIcon = document.createElement('img');
-    settingButtonIcon.src = SettingsIcon;
+    const settingButtonIcon = document.createElement('div');
     setStyle(settingButtonIcon, {
       width: '16px',
       height: '16px',
       userSelect: 'none',
+      backgroundImage: `url(${SettingsIcon})`,
+      backgroundSize: '100% 100%',
     });
     settingButtonBox.appendChild(settingButtonIcon);
     this.floatingBox.appendChild(settingButtonBox);
@@ -147,12 +207,13 @@ class FloatingSearchBox extends HTMLElement {
         }),
       );
     };
-    const matchCaseButtonIcon = document.createElement('img');
-    matchCaseButtonIcon.src = MatchCaseIcon;
+    const matchCaseButtonIcon = document.createElement('div');
     setStyle(matchCaseButtonIcon, {
       width: '18px',
       height: '18px',
       userSelect: 'none',
+      backgroundImage: `url(${MatchCaseIcon})`,
+      backgroundSize: '100% 100%',
     });
     matchcaseButtonBox.appendChild(matchCaseButtonIcon);
 
@@ -177,12 +238,13 @@ class FloatingSearchBox extends HTMLElement {
         backgroundColor: 'transparent',
       });
     };
-    const dontMatchCaseButtonIcon = document.createElement('img');
-    dontMatchCaseButtonIcon.src = DontMatchCaseIcon;
+    const dontMatchCaseButtonIcon = document.createElement('div');
     setStyle(dontMatchCaseButtonIcon, {
       width: '18px',
       height: '18px',
       userSelect: 'none',
+      backgroundImage: `url(${DontMatchCaseIcon})`,
+      backgroundSize: '100% 100%',
     });
     dontMatchCaseButtonBox.appendChild(dontMatchCaseButtonIcon);
 
@@ -228,12 +290,13 @@ class FloatingSearchBox extends HTMLElement {
     prevButtonBox.onclick = () => {
       this.dispatchEvent(new CustomEvent('searchprevious'));
     };
-    const prevButtonIcon = document.createElement('img');
-    prevButtonIcon.src = PrevIcon;
+    const prevButtonIcon = document.createElement('div');
     setStyle(prevButtonIcon, {
       width: '16px',
       height: '16px',
       userSelect: 'none',
+      backgroundImage: `url(${PrevIcon})`,
+      backgroundSize: '100% 100%',
     });
     prevButtonBox.appendChild(prevButtonIcon);
 
@@ -261,12 +324,13 @@ class FloatingSearchBox extends HTMLElement {
     nextButtonBox.onclick = () => {
       this.dispatchEvent(new CustomEvent('searchnext'));
     };
-    const nextButtonIcon = document.createElement('img');
-    nextButtonIcon.src = NextIcon;
+    const nextButtonIcon = document.createElement('div');
     setStyle(nextButtonIcon, {
       width: '16px',
       height: '16px',
       userSelect: 'none',
+      backgroundImage: `url(${NextIcon})`,
+      backgroundSize: '100% 100%',
     });
     nextButtonBox.appendChild(nextButtonIcon);
 
@@ -292,12 +356,13 @@ class FloatingSearchBox extends HTMLElement {
         backgroundColor: 'transparent',
       });
     };
-    const closeButtonIcon = document.createElement('img');
-    closeButtonIcon.src = CloseIcon;
+    const closeButtonIcon = document.createElement('div');
     setStyle(closeButtonIcon, {
       width: '16px',
       height: '16px',
       userSelect: 'none',
+      backgroundImage: `url(${CloseIcon})`,
+      backgroundSize: '100% 100%',
     });
     closeButtonBox.appendChild(closeButtonIcon);
 

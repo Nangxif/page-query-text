@@ -6,6 +6,8 @@ export const defaultValues = {
   selectedColor: '#000000',
   selectedBgColor: '#FF0000',
   fixed: true,
+  startX: 0,
+  startY: 0,
 };
 
 export const textStyleProperties = [

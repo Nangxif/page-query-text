@@ -102,6 +102,9 @@ function insertSearchBox() {
   searchBox = document.createElement(
     'floating-search-box',
   ) as FloatingSearchBoxElement;
+  searchBox.setAttribute('data-fixed', config.fixed.toString());
+  searchBox.setAttribute('data-startx', config.startX.toString());
+  searchBox.setAttribute('data-starty', config.startY.toString());
   document.documentElement.appendChild(searchBox);
   searchBox.addEventListener('setting', () => {
     chrome.runtime.sendMessage({ action: 'openSidePanel' }, (response) => {
@@ -117,7 +120,18 @@ function insertSearchBox() {
   searchBox.addEventListener('matchcasechange', matchCaseChange);
   searchBox.addEventListener('searchprevious', searchPrevious);
   searchBox.addEventListener('searchnext', searchNext);
+  searchBox.addEventListener('move', moveSearchBox);
   searchBox.addEventListener('close', closeSearchBox);
+}
+
+// 移动
+function moveSearchBox(e: any) {
+  const detail = e.detail;
+  const { startX, startY } = detail;
+  chrome.storage.sync.set({
+    startX,
+    startY,
+  });
 }
 
 // 向前查找
@@ -325,7 +339,16 @@ window.addEventListener('load', () => {
   document.documentElement.appendChild(highlightBoxScript);
   // 先获取本地存储的信息
   chrome.storage.sync.get(
-    ['shortcut', 'color', 'bgColor', 'fixed'],
+    [
+      'shortcut',
+      'color',
+      'bgColor',
+      'selectedColor',
+      'selectedBgColor',
+      'fixed',
+      'startX',
+      'startY',
+    ],
     (result) => {
       config = {
         ...defaultValues,

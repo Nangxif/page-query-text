@@ -75,6 +75,7 @@ const Sidebar: React.FC = () => {
             multipleItemBg: 'rgb(32 32 32)',
             optionSelectedBg: 'rgb(32 32 32)',
             optionActiveBg: 'rgb(32 32 32)',
+            colorTextPlaceholder: 'rgba(255,255,255,0.5)',
           },
         },
       }}
@@ -97,7 +98,7 @@ const Sidebar: React.FC = () => {
             },
             {
               validator(_, value) {
-                if (value.length < 2) {
+                if (!value && value.length < 2) {
                   return Promise.reject(
                     new Error('至少选择两个自定义搜索快捷键'),
                   );
@@ -107,6 +108,7 @@ const Sidebar: React.FC = () => {
               message: '至少选择两个自定义搜索快捷键',
             },
           ]}
+          tooltip="可以自定义搜索快捷键，"
         >
           <ShortcutPicker />
         </FormItem>
