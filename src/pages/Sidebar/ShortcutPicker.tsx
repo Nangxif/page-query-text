@@ -6,12 +6,12 @@ type ShortcutPickerProps = {
   onChange?: (shortcut: string[]) => void;
 };
 // 几个特殊的js的keypress能获取到的键盘按键+26个小写字母
-const specialKeys = ['ctrlKey', 'shiftKey', 'altKey', 'metaKey'];
+export const specialKeys = ['ctrlKey', 'shiftKey', 'altKey', 'metaKey'];
 const options = [
   { label: 'Ctrl', value: 'ctrlKey' },
   { label: 'Shift', value: 'shiftKey' },
   { label: 'Alt', value: 'altKey' },
-  { label: 'Meta', value: 'metaKey' },
+  { label: 'Windows/Command', value: 'metaKey' },
 ].concat(
   Array.from({ length: 26 }, (_, index) => ({
     label: String.fromCharCode(97 + index),

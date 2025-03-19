@@ -2,9 +2,9 @@
 import { MatchCaseEnum } from '@/types';
 import { setStyle } from '@/utils';
 import CloseIcon from '../assets/images/close-icon.png';
-import DontMatchCaseIcon from '../assets/images/dont-match-case-icon.png';
 import DragIcon from '../assets/images/drag-icon.png';
 import MatchCaseIcon from '../assets/images/match-case-icon.png';
+import MatchWholeTextIcon from '../assets/images/match-whole-text-icon.png';
 import NextIcon from '../assets/images/next-icon.png';
 import PrevIcon from '../assets/images/prev-icon.png';
 import SettingsIcon from '../assets/images/setting-icon.png';
@@ -243,7 +243,7 @@ class FloatingSearchBox extends HTMLElement {
       width: '18px',
       height: '18px',
       userSelect: 'none',
-      backgroundImage: `url(${DontMatchCaseIcon})`,
+      backgroundImage: `url(${MatchWholeTextIcon})`,
       backgroundSize: '100% 100%',
     });
     dontMatchCaseButtonBox.appendChild(dontMatchCaseButtonIcon);

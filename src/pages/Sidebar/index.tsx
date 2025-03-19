@@ -10,7 +10,7 @@ import {
   Switch,
 } from 'antd';
 import { useEffect } from 'react';
-import ShortcutPicker from './ShortcutPicker';
+import ShortcutPicker, { specialKeys } from './ShortcutPicker';
 import styles from './index.less';
 
 const { Item: FormItem, useForm } = Form;
@@ -98,17 +98,27 @@ const Sidebar: React.FC = () => {
             },
             {
               validator(_, value) {
-                if (!value && value.length < 2) {
+                console.log(
+                  value.length < 2,
+                  value.every((item: string) => !specialKeys.includes(item)),
+                );
+                if (
+                  !value &&
+                  (value.length < 2 ||
+                    value.every((item: string) => !specialKeys.includes(item)))
+                ) {
                   return Promise.reject(
-                    new Error('至少选择两个自定义搜索快捷键'),
+                    new Error(
+                      '至少选择两个自定义搜索快捷键，其中一个必须是功能键',
+                    ),
                   );
                 }
                 return Promise.resolve();
               },
-              message: '至少选择两个自定义搜索快捷键',
+              message: '至少选择两个自定义搜索快捷键，其中一个必须是功能键',
             },
           ]}
-          tooltip="可以自定义搜索快捷键，"
+          tooltip="可以自定义搜索快捷键，其中一个必须是功能键（如：Ctrl、Shift、Alt等），使用者自己注意热键冲突，尽量设置不会冲突的快捷键"
         >
           <ShortcutPicker />
         </FormItem>
@@ -201,6 +211,8 @@ const Sidebar: React.FC = () => {
         >
           如何使用文本搜索？
         </Button>
+
+        <div className={styles['copy-right']}>©️该插件版权归Nangxif所有</div>
       </Form>
     </ConfigProvider>
   );
