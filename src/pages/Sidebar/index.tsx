@@ -1,6 +1,8 @@
 import { defaultValues } from '@/constants';
+import { formatColor } from '@/utils';
 import {
   Button,
+  Card,
   ColorPicker,
   ConfigProvider,
   Form,
@@ -42,14 +44,10 @@ const Sidebar: React.FC = () => {
   }, []);
 
   const handleSubmit = (values: FormValues) => {
-    const colorMetaColor = (values.color as any).metaColor;
-    const color = `rgba(${colorMetaColor?.r},${colorMetaColor?.g},${colorMetaColor?.b},${colorMetaColor?.a})`;
-    const bgColorMetaColor = (values.bgColor as any).metaColor;
-    const bgColor = `rgba(${bgColorMetaColor?.r},${bgColorMetaColor?.g},${bgColorMetaColor?.b},${bgColorMetaColor?.a})`;
-    const selectedColorMetaColor = (values.selectedColor as any).metaColor;
-    const selectedColor = `rgba(${selectedColorMetaColor?.r},${selectedColorMetaColor?.g},${selectedColorMetaColor?.b},${selectedColorMetaColor?.a})`;
-    const selectedBgColorMetaColor = (values.selectedBgColor as any).metaColor;
-    const selectedBgColor = `rgba(${selectedBgColorMetaColor?.r},${selectedBgColorMetaColor?.g},${selectedBgColorMetaColor?.b},${selectedBgColorMetaColor?.a})`;
+    const color = formatColor(values.color);
+    const bgColor = formatColor(values.bgColor);
+    const selectedColor = formatColor(values.selectedColor);
+    const selectedBgColor = formatColor(values.selectedBgColor);
     chrome.storage.sync.set({
       shortcut: values.shortcut,
       color,
@@ -126,6 +124,24 @@ const Sidebar: React.FC = () => {
         >
           <ColorPicker format="rgb" />
         </FormItem>
+
+        <FormItem noStyle shouldUpdate>
+          {({ getFieldsValue }) => {
+            const { color, bgColor } = getFieldsValue();
+            return (
+              <Card className={styles.card} title="示例">
+                <p
+                  style={{
+                    color: formatColor(color),
+                    background: formatColor(bgColor),
+                  }}
+                >
+                  命中的文字
+                </p>
+              </Card>
+            );
+          }}
+        </FormItem>
         <FormItem
           label="当前选中的文字颜色"
           name="selectedColor"
@@ -139,6 +155,29 @@ const Sidebar: React.FC = () => {
           className={styles['form-item']}
         >
           <ColorPicker format="rgb" />
+        </FormItem>
+
+        <FormItem noStyle shouldUpdate>
+          {({ getFieldsValue }) => {
+            const { selectedColor, selectedBgColor } = getFieldsValue();
+            console.log(
+              'selectedColor, selectedBgColor',
+              selectedColor,
+              selectedBgColor,
+            );
+            return (
+              <Card className={styles.card} title="示例">
+                <p
+                  style={{
+                    color: formatColor(selectedColor),
+                    background: formatColor(selectedBgColor),
+                  }}
+                >
+                  当前选中的文字
+                </p>
+              </Card>
+            );
+          }}
         </FormItem>
         <FormItem
           label="固定位置"

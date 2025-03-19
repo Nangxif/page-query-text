@@ -68,6 +68,7 @@ class FloatingSearchBox extends HTMLElement {
     setStyle(settingButtonIcon, {
       width: '16px',
       height: '16px',
+      userSelect: 'none',
     });
     settingButtonBox.appendChild(settingButtonIcon);
     this.floatingBox.appendChild(settingButtonBox);
@@ -151,6 +152,7 @@ class FloatingSearchBox extends HTMLElement {
     setStyle(matchCaseButtonIcon, {
       width: '18px',
       height: '18px',
+      userSelect: 'none',
     });
     matchcaseButtonBox.appendChild(matchCaseButtonIcon);
 
@@ -180,6 +182,7 @@ class FloatingSearchBox extends HTMLElement {
     setStyle(dontMatchCaseButtonIcon, {
       width: '18px',
       height: '18px',
+      userSelect: 'none',
     });
     dontMatchCaseButtonBox.appendChild(dontMatchCaseButtonIcon);
 
@@ -230,6 +233,7 @@ class FloatingSearchBox extends HTMLElement {
     setStyle(prevButtonIcon, {
       width: '16px',
       height: '16px',
+      userSelect: 'none',
     });
     prevButtonBox.appendChild(prevButtonIcon);
 
@@ -262,6 +266,7 @@ class FloatingSearchBox extends HTMLElement {
     setStyle(nextButtonIcon, {
       width: '16px',
       height: '16px',
+      userSelect: 'none',
     });
     nextButtonBox.appendChild(nextButtonIcon);
 
@@ -292,6 +297,7 @@ class FloatingSearchBox extends HTMLElement {
     setStyle(closeButtonIcon, {
       width: '16px',
       height: '16px',
+      userSelect: 'none',
     });
     closeButtonBox.appendChild(closeButtonIcon);
 

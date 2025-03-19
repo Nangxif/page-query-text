@@ -91,3 +91,12 @@ export const splitText = (
     return text.split(regex);
   }
 };
+
+export const formatColor = (data?: any) => {
+  const colorMetaColor = data?.metaColor;
+  return data
+    ? typeof data === 'string'
+      ? data
+      : `rgba(${colorMetaColor?.r},${colorMetaColor?.g},${colorMetaColor?.b},${colorMetaColor?.a})`
+    : undefined;
+};

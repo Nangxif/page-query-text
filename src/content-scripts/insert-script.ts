@@ -18,6 +18,7 @@ let needRenderHighlightParentNodes: {
   parentNode: HTMLElement;
   originChildNodes: Node[];
 }[] = [];
+let highlightNodes: HTMLElement[] = [];
 let keyword = '';
 
 function queryAllText() {
@@ -119,20 +120,37 @@ function insertSearchBox() {
   searchBox.addEventListener('close', closeSearchBox);
 }
 
+// 向前查找
 function searchPrevious() {
+  updateKeywordStyle(highlightNodes[currentIndex - 1], {
+    color: config.color,
+    'background-color': config.bgColor,
+  });
   currentIndex =
-    currentIndex - 1 < 1
-      ? needRenderHighlightParentNodes.length
-      : currentIndex - 1;
-  renderSearchResult(currentIndex, needRenderHighlightParentNodes.length);
+    currentIndex - 1 < 1 ? highlightNodes.length : currentIndex - 1;
+  updateKeywordStyle(highlightNodes[currentIndex - 1], {
+    color: config.selectedColor,
+    'background-color': config.selectedBgColor,
+  });
+  renderSearchResult(currentIndex, highlightNodes.length);
+  highlightNodes[currentIndex - 1].scrollIntoView();
 }
 
+// 向后查找
 function searchNext() {
+  updateKeywordStyle(highlightNodes[currentIndex - 1], {
+    color: config.color,
+    'background-color': config.bgColor,
+  });
   currentIndex =
-    currentIndex + 1 > needRenderHighlightParentNodes.length
-      ? 1
-      : currentIndex + 1;
-  renderSearchResult(currentIndex, needRenderHighlightParentNodes.length);
+    currentIndex + 1 > highlightNodes.length ? 1 : currentIndex + 1;
+
+  updateKeywordStyle(highlightNodes[currentIndex - 1], {
+    color: config.selectedColor,
+    'background-color': config.selectedBgColor,
+  });
+  renderSearchResult(currentIndex, highlightNodes.length);
+  highlightNodes[currentIndex - 1].scrollIntoView();
 }
 
 function matchCaseChange(e: any) {
@@ -156,6 +174,7 @@ function queryText(e: any) {
   // 先把页面上的节点先恢复原状
   resetNeedRenderHighlightParentNodes();
   needRenderHighlightParentNodes = [];
+  highlightNodes = [];
   queryAllText();
   keyword = typeof e === 'string' ? e : e.detail;
   // 在下面这个map里面搜索出对应的keyword
@@ -193,9 +212,9 @@ function queryText(e: any) {
   // 所有相关父节点算出来之后，更换里面的内容
   for (let i = 0; i < needRenderHighlightParentNodes.length; i++) {
     const node = needRenderHighlightParentNodes[i];
-    highlightKeyword(node.parentNode, keyword);
+    renderHighlightKeyword(node.parentNode, keyword);
   }
-  renderSearchResult(currentIndex, needRenderHighlightParentNodes.length);
+  renderSearchResult(currentIndex, highlightNodes.length);
 }
 
 function renderSearchResult(currentIndex: number, total: number) {
@@ -224,7 +243,7 @@ function getTextNodes(node: Node) {
   }
   return textNodes;
 }
-function highlightKeyword(parentNode: Node, keyword: string) {
+function renderHighlightKeyword(parentNode: Node, keyword: string) {
   const textNodes = getTextNodes(parentNode);
   // 处理每个文本节点
   textNodes.forEach((textNode) => {
@@ -240,7 +259,6 @@ function highlightKeyword(parentNode: Node, keyword: string) {
           new RegExp(keyword, matchCase === MatchCaseEnum.Match ? 'mg' : 'img'),
         ),
       ).map((item) => item.index);
-      console.log('matchKeywords=', matchKeywords);
       const fragment = document.createDocumentFragment();
 
       // 重建节点结构
@@ -258,25 +276,33 @@ function highlightKeyword(parentNode: Node, keyword: string) {
             color: config.color,
           };
           const keywordTextNodeSpan = document.createElement('span');
-          const originText = text.slice(matchKeywords[i], keyword.length);
-          console.log(
-            'originText=',
-            text,
+          const originText = text.slice(
             matchKeywords[i],
-            keyword.length,
-            originText,
+            matchKeywords[i] + keyword.length,
           );
           const keywordTextNode = document.createTextNode(originText);
           highlightEl.setAttribute('data-styles', JSON.stringify(styles));
           keywordTextNodeSpan.appendChild(keywordTextNode);
           highlightEl.appendChild(keywordTextNodeSpan);
           fragment.appendChild(highlightEl);
+          highlightNodes.push(highlightEl);
         }
       }
       // 替换原始节点
       textNode.parentNode?.replaceChild(fragment, textNode);
     }
   });
+}
+// 渲染选中的样式
+function updateKeywordStyle(
+  highlightNode: HTMLElement,
+  newStyles: Record<string, any>,
+) {
+  const styles = JSON.parse(highlightNode.dataset.styles || '{}');
+  Object.entries(newStyles).forEach(([styleName, styleValue]) => {
+    styles[styleName] = styleValue;
+  });
+  highlightNode.setAttribute('data-styles', JSON.stringify(styles));
 }
 
 window.addEventListener('load', () => {

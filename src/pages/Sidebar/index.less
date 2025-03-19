@@ -19,6 +19,32 @@ body {
     }
   }
 
+  .card {
+    margin-bottom: 12px;
+    width: 100%;
+    background-color: rgb(49 49 49);
+
+    :global {
+      .ant-card-head {
+        border-bottom: 0;
+        min-height: unset;
+        padding: 4px 12px;
+        font-size: 14px;
+        font-style: italic;
+        color: #bbb;
+      }
+
+      .ant-card-body {
+        padding: 12px;
+
+        p {
+          width: fit-content;
+          margin: 0;
+        }
+      }
+    }
+  }
+
   .save-btn {
     width: 100%;
   }
