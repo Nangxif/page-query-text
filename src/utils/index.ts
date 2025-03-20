@@ -1,5 +1,4 @@
 import { textStyleProperties } from '@/constants';
-import { MatchCaseEnum } from '@/types';
 
 export const setStyle = (
   element: HTMLElement,
@@ -81,14 +80,44 @@ export const debounceFn = <T>(
 export const splitText = (
   text: string,
   keyword: string,
-  matchCase: MatchCaseEnum,
+  caseSensitive = false,
+  matchWholeText = false,
 ) => {
-  if (matchCase === MatchCaseEnum.Match) {
-    return text.split(keyword);
+  // if (matchCase === MatchCaseEnum.Match) {
+  //   return text.split(keyword);
+  // } else {
+  //   // 不区分大小写，使用正则表达式拆分
+  //   const regex = new RegExp(keyword, 'i'); // 'i' 表示不区分大小写
+  //   return text.split(regex);
+  // }
+  if (caseSensitive) {
+    // 区分大小写
+    if (matchWholeText) {
+      // 如果 matchWholeText 为 true，要求整个文本完全匹配 keyword（前后允许空格）
+      const trimmedText = text.trim();
+      return trimmedText === keyword ? [text] : [text];
+    } else {
+      // 如果 matchWholeText 为 false，直接使用 keyword 拆分
+      return text.split(keyword);
+    }
   } else {
     // 不区分大小写，使用正则表达式拆分
-    const regex = new RegExp(keyword, 'i'); // 'i' 表示不区分大小写
-    return text.split(regex);
+    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // 转义特殊字符
+    const flags = 'im'; // 不区分大小写
+    let regex;
+
+    if (matchWholeText) {
+      // 如果 matchWholeText 为 true，要求整个文本完全匹配 keyword（前后允许空格）
+      regex = new RegExp(
+        `(?:^|[\\s\\n])${escapedKeyword}(?:[\\s\\n]|$)`,
+        flags,
+      );
+      return regex.test(text) ? [text] : [text];
+    } else {
+      // 如果 matchWholeText 为 false，使用正则表达式拆分
+      regex = new RegExp(escapedKeyword, flags);
+      return text.split(regex);
+    }
   }
 };
 
@@ -99,4 +128,28 @@ export const formatColor = (data?: any) => {
       ? data
       : `rgba(${colorMetaColor?.r},${colorMetaColor?.g},${colorMetaColor?.b},${colorMetaColor?.a})`
     : undefined;
+};
+
+export const isExactMatch = (
+  text: string,
+  keyword: string,
+  caseSensitive = false,
+  matchWholeText = false,
+) => {
+  // 转义 keyword 中的特殊字符
+  const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // 根据 caseSensitive 参数决定是否忽略大小写
+  const flags = caseSensitive ? '' : 'i';
+
+  let regex;
+  if (matchWholeText) {
+    // 如果 matchWholeText 为 true，要求整个文本完全匹配 keyword（前后允许空格或换行符）
+    regex = new RegExp(`(?:^|[\\s\\n])${escapedKeyword}(?:[\\s\\n]|$)`, flags);
+  } else {
+    // 如果 matchWholeText 为 false，要求 keyword 作为一个独立的词匹配（前后允许空格或换行符）
+    regex = new RegExp(escapedKeyword, flags);
+  }
+
+  // 测试是否匹配
+  return regex.test(text);
 };

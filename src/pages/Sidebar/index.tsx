@@ -1,4 +1,4 @@
-import { defaultValues } from '@/constants';
+import { defaultConfig } from '@/constants';
 import { formatColor } from '@/utils';
 import {
   Button,
@@ -83,7 +83,7 @@ const Sidebar: React.FC = () => {
       <Form
         form={form}
         layout="vertical"
-        initialValues={defaultValues}
+        initialValues={defaultConfig}
         className={styles.container}
         onFinish={handleSubmit}
       >

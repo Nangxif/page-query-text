@@ -5,6 +5,11 @@ export enum MatchCaseEnum {
   DontMatch = 'DontMatch',
 }
 
+export enum MatchWholeTextEnum {
+  True = 'True',
+  False = 'false',
+}
+
 export type Position = {
   top: number;
   left: number;

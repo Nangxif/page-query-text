@@ -1,4 +1,4 @@
-export const defaultValues = {
+export const defaultConfig = {
   shortcut: ['ctrlKey', 'f'],
   // 文字高亮常用的颜色
   color: '#000000',

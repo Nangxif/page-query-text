@@ -1,18 +1,24 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable @typescript-eslint/no-loop-func */
-import { defaultValues } from '@/constants';
-import { MatchCaseEnum } from '@/types';
-import { debounceFn, getTextRelatedStyles, splitText } from '@/utils';
+import { defaultConfig } from '@/constants';
+import { MatchCaseEnum, MatchWholeTextEnum } from '@/types';
+import {
+  debounceFn,
+  getTextRelatedStyles,
+  isExactMatch,
+  splitText,
+} from '@/utils';
 import { FloatingSearchBoxElement } from './floating-search-box';
 
 // 是否打开搜索工具
 let isOpen = false;
 // 默认的配置
-let config = defaultValues;
+let config = defaultConfig;
 const searchResultEmptyText = '无结果';
 let currentIndex = 1;
 let searchBox = null as FloatingSearchBoxElement | null;
 let matchCase = MatchCaseEnum.DontMatch;
+let matchWholeText = MatchWholeTextEnum.False;
 const textContentParentNodesMap = new Map<HTMLElement, string[]>();
 let needRenderHighlightParentNodes: {
   parentNode: HTMLElement;
@@ -118,6 +124,7 @@ function insertSearchBox() {
   const queryTextFn = debounceFn(queryText, 500);
   searchBox.addEventListener('search', queryTextFn);
   searchBox.addEventListener('matchcasechange', matchCaseChange);
+  searchBox.addEventListener('matchwholetextchange', matchWholeTextChange);
   searchBox.addEventListener('searchprevious', searchPrevious);
   searchBox.addEventListener('searchnext', searchNext);
   searchBox.addEventListener('move', moveSearchBox);
@@ -128,7 +135,7 @@ function insertSearchBox() {
 function moveSearchBox(e: any) {
   const detail = e.detail;
   const { startX, startY } = detail;
-  chrome.storage.sync.set({
+  chrome.storage.local.set({
     startX,
     startY,
   });
@@ -172,6 +179,12 @@ function matchCaseChange(e: any) {
   matchCase = newMatchCase;
   queryText(keyword);
 }
+
+function matchWholeTextChange(e: any) {
+  const newMatchWholeText = e?.detail as MatchWholeTextEnum;
+  matchWholeText = newMatchWholeText;
+  queryText(keyword);
+}
 // 关闭搜索工具
 function closeSearchBox() {
   searchBox?.remove();
@@ -195,21 +208,40 @@ function queryText(e: any) {
   for (const parentNode of textContentParentNodesMap.keys()) {
     const texts = textContentParentNodesMap.get(parentNode);
     if (keyword && texts && texts.length > 0) {
+      // if (
+      //   matchCase === MatchCaseEnum.Match &&
+      //   texts?.some((text) => text.includes(keyword))
+      // ) {
+      //   const originChildNodes = Array.from(parentNode.childNodes).map((node) =>
+      //     node.cloneNode(true),
+      //   );
+      //   needRenderHighlightParentNodes.push({
+      //     parentNode,
+      //     originChildNodes,
+      //   });
+      // } else if (
+      //   matchCase === MatchCaseEnum.DontMatch &&
+      //   texts?.some((text) =>
+      //     text?.toLowerCase().includes(keyword?.toLowerCase()),
+      //   )
+      // ) {
+      //   const originChildNodes = Array.from(parentNode.childNodes).map((node) =>
+      //     node.cloneNode(true),
+      //   );
+      //   needRenderHighlightParentNodes.push({
+      //     parentNode,
+      //     originChildNodes,
+      //   });
+      // }
+
       if (
-        matchCase === MatchCaseEnum.Match &&
-        texts?.some((text) => text.includes(keyword))
-      ) {
-        const originChildNodes = Array.from(parentNode.childNodes).map((node) =>
-          node.cloneNode(true),
-        );
-        needRenderHighlightParentNodes.push({
-          parentNode,
-          originChildNodes,
-        });
-      } else if (
-        matchCase === MatchCaseEnum.DontMatch &&
         texts?.some((text) =>
-          text?.toLowerCase().includes(keyword?.toLowerCase()),
+          isExactMatch(
+            text,
+            keyword,
+            matchCase === MatchCaseEnum.Match,
+            matchWholeText === MatchWholeTextEnum.True,
+          ),
         )
       ) {
         const originChildNodes = Array.from(parentNode.childNodes).map((node) =>
@@ -267,10 +299,25 @@ function renderHighlightKeyword(parentNode: Node, keyword: string) {
       (matchCase === MatchCaseEnum.DontMatch &&
         text.toLowerCase().includes(keyword.toLowerCase()))
     ) {
-      const parts = splitText(text, keyword, matchCase);
+      console.log('text=', text);
+      const parts = splitText(
+        text,
+        keyword,
+        matchCase === MatchCaseEnum.Match,
+        matchWholeText === MatchWholeTextEnum.True,
+      );
+      console.log('parts=', parts);
       const matchKeywords = Array.from(
         text.matchAll(
-          new RegExp(keyword, matchCase === MatchCaseEnum.Match ? 'mg' : 'img'),
+          matchWholeText === MatchWholeTextEnum.True
+            ? new RegExp(
+                `(?:^|[\\s\\n])${keyword}(?:[\\s\\n]|$)`,
+                matchCase === MatchCaseEnum.Match ? 'mg' : 'img',
+              )
+            : new RegExp(
+                keyword,
+                matchCase === MatchCaseEnum.Match ? 'mg' : 'img',
+              ),
         ),
       ).map((item) => item.index);
       const fragment = document.createDocumentFragment();
@@ -346,40 +393,41 @@ window.addEventListener('load', () => {
       'selectedColor',
       'selectedBgColor',
       'fixed',
-      'startX',
-      'startY',
     ],
-    (result) => {
-      config = {
-        ...defaultValues,
-        ...result,
-      };
-      const { shortcut } = config;
-      console.log('====本地缓存已成功获取，可以继续执行后续逻辑====');
-      console.log(`请按快捷键: ${shortcut.join('+')}打开搜索工具`);
-      window.addEventListener('keydown', (e) => {
-        // 把ctrlKey、shiftKey、altKey、metaKey筛选出来
-        const shortcutWithSpecialKeys = shortcut.filter((item) =>
-          ['ctrlKey', 'shiftKey', 'altKey', 'metaKey'].includes(item),
-        );
-        const shortcutKeys = shortcut.filter(
-          (item) =>
-            !['ctrlKey', 'shiftKey', 'altKey', 'metaKey'].includes(item),
-        );
-        if (
-          shortcutWithSpecialKeys.every(
-            (item: any) => e[item as keyof KeyboardEvent],
-          ) &&
-          shortcutKeys.every(
-            (item: any) => e.key.toLowerCase() === item.toLowerCase(),
-          )
-        ) {
-          console.log('成功打开搜索工具');
-          if (!isOpen) {
-            isOpen = true;
-            insertSearchBox();
+    (syncConfig) => {
+      chrome.storage.local.get(['startX', 'startY'], (localConfig) => {
+        config = {
+          ...defaultConfig,
+          ...syncConfig,
+          ...localConfig,
+        };
+        const { shortcut } = config;
+        console.log('====本地缓存已成功获取，可以继续执行后续逻辑====');
+        console.log(`请按快捷键: ${shortcut.join('+')}打开搜索工具`);
+        window.addEventListener('keydown', (e) => {
+          // 把ctrlKey、shiftKey、altKey、metaKey筛选出来
+          const shortcutWithSpecialKeys = shortcut.filter((item) =>
+            ['ctrlKey', 'shiftKey', 'altKey', 'metaKey'].includes(item),
+          );
+          const shortcutKeys = shortcut.filter(
+            (item) =>
+              !['ctrlKey', 'shiftKey', 'altKey', 'metaKey'].includes(item),
+          );
+          if (
+            shortcutWithSpecialKeys.every(
+              (item: any) => e[item as keyof KeyboardEvent],
+            ) &&
+            shortcutKeys.every(
+              (item: any) => e.key.toLowerCase() === item.toLowerCase(),
+            )
+          ) {
+            console.log('成功打开搜索工具');
+            if (!isOpen) {
+              isOpen = true;
+              insertSearchBox();
+            }
           }
-        }
+        });
       });
     },
   );

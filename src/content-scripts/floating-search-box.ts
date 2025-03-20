@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
-import { MatchCaseEnum } from '@/types';
+import { MatchCaseEnum, MatchWholeTextEnum } from '@/types';
 import { setStyle } from '@/utils';
 import CloseIcon from '../assets/images/close-icon.png';
 import DragIcon from '../assets/images/drag-icon.png';
@@ -15,6 +15,7 @@ class FloatingSearchBox extends HTMLElement {
   private dragButton: HTMLElement | null = null;
   private searchResultId: string = `search-result`;
   private matchCase = MatchCaseEnum.DontMatch;
+  private matchWholeText = MatchWholeTextEnum.False;
   private startX = 0;
   private startY = 0;
   private translateX = 0;
@@ -217,8 +218,8 @@ class FloatingSearchBox extends HTMLElement {
     });
     matchcaseButtonBox.appendChild(matchCaseButtonIcon);
 
-    const dontMatchCaseButtonBox = document.createElement('div');
-    setStyle(dontMatchCaseButtonBox, {
+    const matchWholeTextButtonBox = document.createElement('div');
+    setStyle(matchWholeTextButtonBox, {
       width: '22px',
       height: '22px',
       display: 'flex',
@@ -228,29 +229,47 @@ class FloatingSearchBox extends HTMLElement {
       borderRadius: '4px',
       marginRight: '4px',
     });
-    dontMatchCaseButtonBox.onmouseenter = () => {
-      setStyle(dontMatchCaseButtonBox, {
+    matchWholeTextButtonBox.onmouseenter = () => {
+      setStyle(matchWholeTextButtonBox, {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
       });
     };
-    dontMatchCaseButtonBox.onmouseleave = () => {
-      setStyle(dontMatchCaseButtonBox, {
-        backgroundColor: 'transparent',
-      });
+    matchWholeTextButtonBox.onmouseleave = () => {
+      if (this.matchWholeText === MatchWholeTextEnum.False) {
+        setStyle(matchWholeTextButtonBox, {
+          backgroundColor: 'transparent',
+        });
+      }
     };
-    const dontMatchCaseButtonIcon = document.createElement('div');
-    setStyle(dontMatchCaseButtonIcon, {
+    matchWholeTextButtonBox.onclick = () => {
+      this.matchWholeText =
+        this.matchWholeText === MatchWholeTextEnum.False
+          ? MatchWholeTextEnum.True
+          : MatchWholeTextEnum.False;
+      if (this.matchWholeText === MatchWholeTextEnum.True) {
+        setStyle(matchWholeTextButtonBox, {
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        });
+      }
+      this.dispatchEvent(
+        new CustomEvent('matchwholetextchange', {
+          detail: this.matchWholeText,
+        }),
+      );
+    };
+    const matchWholeTextButtonIcon = document.createElement('div');
+    setStyle(matchWholeTextButtonIcon, {
       width: '18px',
       height: '18px',
       userSelect: 'none',
       backgroundImage: `url(${MatchWholeTextIcon})`,
       backgroundSize: '100% 100%',
     });
-    dontMatchCaseButtonBox.appendChild(dontMatchCaseButtonIcon);
+    matchWholeTextButtonBox.appendChild(matchWholeTextButtonIcon);
 
     inputBox.appendChild(input);
     inputBox.appendChild(matchcaseButtonBox);
-    inputBox.appendChild(dontMatchCaseButtonBox);
+    inputBox.appendChild(matchWholeTextButtonBox);
 
     // 将输入框添加到内容区域
     this.floatingBox.appendChild(inputBox);
