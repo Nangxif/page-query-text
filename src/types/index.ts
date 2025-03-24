@@ -18,3 +18,8 @@ export type Position = {
   transformX: number;
   transformY: number;
 };
+
+export enum LoadingEnum {
+  Loading = 'Loading',
+  Loaded = 'Loaded',
+}

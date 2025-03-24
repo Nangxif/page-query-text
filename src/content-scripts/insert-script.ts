@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable @typescript-eslint/no-loop-func */
 import { defaultConfig } from '@/constants';
-import { MatchCaseEnum, MatchWholeTextEnum } from '@/types';
+import { LoadingEnum, MatchCaseEnum } from '@/types';
 import {
   debounceFn,
   getTextRelatedStyles,
@@ -18,7 +18,7 @@ const searchResultEmptyText = '无结果';
 let currentIndex = 1;
 let searchBox = null as FloatingSearchBoxElement | null;
 let matchCase = MatchCaseEnum.DontMatch;
-let matchWholeText = MatchWholeTextEnum.False;
+// let matchWholeText = MatchWholeTextEnum.False;
 const textContentParentNodesMap = new Map<HTMLElement, string[]>();
 let needRenderHighlightParentNodes: {
   parentNode: HTMLElement;
@@ -34,7 +34,7 @@ function queryAllText() {
   recursionElementChildNodes(elements);
 }
 
-function isElementVisible(element: HTMLElement) {
+function isElementTagVisible(element: HTMLElement) {
   let current = element;
 
   while (current) {
@@ -48,6 +48,26 @@ function isElementVisible(element: HTMLElement) {
         return false;
       }
 
+      // const style = window.getComputedStyle(current);
+      // if (
+      //   style.display === 'none' ||
+      //   style.visibility === 'hidden' ||
+      //   style.opacity === '0'
+      // ) {
+      //   return false;
+      // }
+    }
+    current = current.parentNode as HTMLElement;
+  }
+
+  return true;
+}
+
+function isElementStyleVisible(element: HTMLElement) {
+  let current = element;
+
+  while (current) {
+    if (current.nodeType === Node.ELEMENT_NODE) {
       const style = window.getComputedStyle(current);
       if (
         style.display === 'none' ||
@@ -78,7 +98,7 @@ function recursionElementChildNodes(elements: HTMLElement[]) {
     }
 
     // 对于所有节点，检查它们是否在可见的祖先链中
-    if (!isElementVisible(element)) {
+    if (!isElementTagVisible(element)) {
       continue;
     }
 
@@ -124,7 +144,7 @@ function insertSearchBox() {
   const queryTextFn = debounceFn(queryText, 500);
   searchBox.addEventListener('search', queryTextFn);
   searchBox.addEventListener('matchcasechange', matchCaseChange);
-  searchBox.addEventListener('matchwholetextchange', matchWholeTextChange);
+  // searchBox.addEventListener('matchwholetextchange', matchWholeTextChange);
   searchBox.addEventListener('searchprevious', searchPrevious);
   searchBox.addEventListener('searchnext', searchNext);
   searchBox.addEventListener('move', moveSearchBox);
@@ -180,11 +200,11 @@ function matchCaseChange(e: any) {
   queryText(keyword);
 }
 
-function matchWholeTextChange(e: any) {
-  const newMatchWholeText = e?.detail as MatchWholeTextEnum;
-  matchWholeText = newMatchWholeText;
-  queryText(keyword);
-}
+// function matchWholeTextChange(e: any) {
+//   const newMatchWholeText = e?.detail as MatchWholeTextEnum;
+//   matchWholeText = newMatchWholeText;
+//   queryText(keyword);
+// }
 // 关闭搜索工具
 function closeSearchBox() {
   searchBox?.remove();
@@ -198,6 +218,7 @@ function closeSearchBox() {
 }
 
 function queryText(e: any) {
+  searchBox?.setAttribute('data-loading', LoadingEnum.Loading);
   // 先把页面上的节点先恢复原状
   resetNeedRenderHighlightParentNodes();
   needRenderHighlightParentNodes = [];
@@ -208,39 +229,13 @@ function queryText(e: any) {
   for (const parentNode of textContentParentNodesMap.keys()) {
     const texts = textContentParentNodesMap.get(parentNode);
     if (keyword && texts && texts.length > 0) {
-      // if (
-      //   matchCase === MatchCaseEnum.Match &&
-      //   texts?.some((text) => text.includes(keyword))
-      // ) {
-      //   const originChildNodes = Array.from(parentNode.childNodes).map((node) =>
-      //     node.cloneNode(true),
-      //   );
-      //   needRenderHighlightParentNodes.push({
-      //     parentNode,
-      //     originChildNodes,
-      //   });
-      // } else if (
-      //   matchCase === MatchCaseEnum.DontMatch &&
-      //   texts?.some((text) =>
-      //     text?.toLowerCase().includes(keyword?.toLowerCase()),
-      //   )
-      // ) {
-      //   const originChildNodes = Array.from(parentNode.childNodes).map((node) =>
-      //     node.cloneNode(true),
-      //   );
-      //   needRenderHighlightParentNodes.push({
-      //     parentNode,
-      //     originChildNodes,
-      //   });
-      // }
-
       if (
         texts?.some((text) =>
           isExactMatch(
             text,
             keyword,
             matchCase === MatchCaseEnum.Match,
-            matchWholeText === MatchWholeTextEnum.True,
+            // matchWholeText === MatchWholeTextEnum.True,
           ),
         )
       ) {
@@ -255,12 +250,17 @@ function queryText(e: any) {
     }
   }
 
+  // 这里要过滤掉祖先节点样式有display: none的节点
+  needRenderHighlightParentNodes = needRenderHighlightParentNodes.filter(
+    (node) => isElementStyleVisible(node.parentNode),
+  );
   // 所有相关父节点算出来之后，更换里面的内容
   for (let i = 0; i < needRenderHighlightParentNodes.length; i++) {
     const node = needRenderHighlightParentNodes[i];
     renderHighlightKeyword(node.parentNode, keyword);
   }
   renderSearchResult(currentIndex, highlightNodes.length);
+  searchBox?.setAttribute('data-loading', LoadingEnum.Loaded);
 }
 
 function renderSearchResult(currentIndex: number, total: number) {
@@ -299,25 +299,15 @@ function renderHighlightKeyword(parentNode: Node, keyword: string) {
       (matchCase === MatchCaseEnum.DontMatch &&
         text.toLowerCase().includes(keyword.toLowerCase()))
     ) {
-      console.log('text=', text);
       const parts = splitText(
         text,
         keyword,
         matchCase === MatchCaseEnum.Match,
-        matchWholeText === MatchWholeTextEnum.True,
+        // matchWholeText === MatchWholeTextEnum.True,
       );
-      console.log('parts=', parts);
       const matchKeywords = Array.from(
         text.matchAll(
-          matchWholeText === MatchWholeTextEnum.True
-            ? new RegExp(
-                `(?:^|[\\s\\n])${keyword}(?:[\\s\\n]|$)`,
-                matchCase === MatchCaseEnum.Match ? 'mg' : 'img',
-              )
-            : new RegExp(
-                keyword,
-                matchCase === MatchCaseEnum.Match ? 'mg' : 'img',
-              ),
+          new RegExp(keyword, matchCase === MatchCaseEnum.Match ? 'mg' : 'img'),
         ),
       ).map((item) => item.index);
       const fragment = document.createDocumentFragment();

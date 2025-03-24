@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
-import { MatchCaseEnum, MatchWholeTextEnum } from '@/types';
+import { LoadingEnum, MatchCaseEnum } from '@/types';
 import { setStyle } from '@/utils';
 import CloseIcon from '../assets/images/close-icon.png';
 import DragIcon from '../assets/images/drag-icon.png';
+import LoadingIcon from '../assets/images/loading-icon.png';
 import MatchCaseIcon from '../assets/images/match-case-icon.png';
-import MatchWholeTextIcon from '../assets/images/match-whole-text-icon.png';
 import NextIcon from '../assets/images/next-icon.png';
 import PrevIcon from '../assets/images/prev-icon.png';
 import SettingsIcon from '../assets/images/setting-icon.png';
@@ -13,16 +13,18 @@ import SettingsIcon from '../assets/images/setting-icon.png';
 class FloatingSearchBox extends HTMLElement {
   private floatingBox: HTMLElement | null = null;
   private dragButton: HTMLElement | null = null;
+  private loadingIcon: HTMLElement | null = null;
   private searchResultId: string = `search-result`;
   private matchCase = MatchCaseEnum.DontMatch;
-  private matchWholeText = MatchWholeTextEnum.False;
+  // private matchWholeText = MatchWholeTextEnum.False;
   private startX = 0;
   private startY = 0;
   private translateX = 0;
   private translateY = 0;
+  private loading = LoadingEnum.Loaded;
 
   static get observedAttributes() {
-    return ['data-fixed', 'data-startx', 'data-starty'];
+    return ['data-fixed', 'data-startx', 'data-starty', 'data-loading'];
   }
 
   constructor() {
@@ -36,6 +38,14 @@ class FloatingSearchBox extends HTMLElement {
   }
 
   private createFloatingBox() {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    this.shadowRoot?.appendChild(styleElement);
     this.startX = this.dataset.startx ? Number(this.dataset.startx) : 0;
     this.startY = this.dataset.starty ? Number(this.dataset.starty) : 0;
     // 创建悬浮框
@@ -165,9 +175,36 @@ class FloatingSearchBox extends HTMLElement {
     input.autofocus = true;
     input.placeholder = '查找';
     // 绑定事件，当输入框内容变化时，调用search函数
-    input.oninput = () => {
-      this.dispatchEvent(new CustomEvent('search', { detail: input.value }));
-    };
+    input.addEventListener('input', (e) => {
+      this.dispatchEvent(
+        new CustomEvent('search', {
+          detail: (e.target as HTMLInputElement).value,
+        }),
+      );
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        this.dispatchEvent(
+          new CustomEvent('search', {
+            detail: (e.target as HTMLInputElement).value,
+          }),
+        );
+      }
+    });
+
+    this.loadingIcon = document.createElement('div');
+    setStyle(this.loadingIcon, {
+      width: '14px',
+      height: '14px',
+      backgroundImage: `url(${LoadingIcon})`,
+      backgroundSize: '100% 100%',
+      marginRight: '4px',
+      display: 'none',
+      animation:
+        this.loading === LoadingEnum.Loading
+          ? 'spin 1s linear infinite'
+          : 'none',
+    });
 
     const matchcaseButtonBox = document.createElement('div');
     setStyle(matchcaseButtonBox, {
@@ -218,58 +255,59 @@ class FloatingSearchBox extends HTMLElement {
     });
     matchcaseButtonBox.appendChild(matchCaseButtonIcon);
 
-    const matchWholeTextButtonBox = document.createElement('div');
-    setStyle(matchWholeTextButtonBox, {
-      width: '22px',
-      height: '22px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      cursor: 'pointer',
-      borderRadius: '4px',
-      marginRight: '4px',
-    });
-    matchWholeTextButtonBox.onmouseenter = () => {
-      setStyle(matchWholeTextButtonBox, {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      });
-    };
-    matchWholeTextButtonBox.onmouseleave = () => {
-      if (this.matchWholeText === MatchWholeTextEnum.False) {
-        setStyle(matchWholeTextButtonBox, {
-          backgroundColor: 'transparent',
-        });
-      }
-    };
-    matchWholeTextButtonBox.onclick = () => {
-      this.matchWholeText =
-        this.matchWholeText === MatchWholeTextEnum.False
-          ? MatchWholeTextEnum.True
-          : MatchWholeTextEnum.False;
-      if (this.matchWholeText === MatchWholeTextEnum.True) {
-        setStyle(matchWholeTextButtonBox, {
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        });
-      }
-      this.dispatchEvent(
-        new CustomEvent('matchwholetextchange', {
-          detail: this.matchWholeText,
-        }),
-      );
-    };
-    const matchWholeTextButtonIcon = document.createElement('div');
-    setStyle(matchWholeTextButtonIcon, {
-      width: '18px',
-      height: '18px',
-      userSelect: 'none',
-      backgroundImage: `url(${MatchWholeTextIcon})`,
-      backgroundSize: '100% 100%',
-    });
-    matchWholeTextButtonBox.appendChild(matchWholeTextButtonIcon);
+    // const matchWholeTextButtonBox = document.createElement('div');
+    // setStyle(matchWholeTextButtonBox, {
+    //   width: '22px',
+    //   height: '22px',
+    //   display: 'flex',
+    //   alignItems: 'center',
+    //   justifyContent: 'center',
+    //   cursor: 'pointer',
+    //   borderRadius: '4px',
+    //   marginRight: '4px',
+    // });
+    // matchWholeTextButtonBox.onmouseenter = () => {
+    //   setStyle(matchWholeTextButtonBox, {
+    //     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    //   });
+    // };
+    // matchWholeTextButtonBox.onmouseleave = () => {
+    //   if (this.matchWholeText === MatchWholeTextEnum.False) {
+    //     setStyle(matchWholeTextButtonBox, {
+    //       backgroundColor: 'transparent',
+    //     });
+    //   }
+    // };
+    // matchWholeTextButtonBox.onclick = () => {
+    //   this.matchWholeText =
+    //     this.matchWholeText === MatchWholeTextEnum.False
+    //       ? MatchWholeTextEnum.True
+    //       : MatchWholeTextEnum.False;
+    //   if (this.matchWholeText === MatchWholeTextEnum.True) {
+    //     setStyle(matchWholeTextButtonBox, {
+    //       backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    //     });
+    //   }
+    //   this.dispatchEvent(
+    //     new CustomEvent('matchwholetextchange', {
+    //       detail: this.matchWholeText,
+    //     }),
+    //   );
+    // };
+    // const matchWholeTextButtonIcon = document.createElement('div');
+    // setStyle(matchWholeTextButtonIcon, {
+    //   width: '18px',
+    //   height: '18px',
+    //   userSelect: 'none',
+    //   backgroundImage: `url(${MatchWholeTextIcon})`,
+    //   backgroundSize: '100% 100%',
+    // });
+    // matchWholeTextButtonBox.appendChild(matchWholeTextButtonIcon);
 
     inputBox.appendChild(input);
+    inputBox.appendChild(this.loadingIcon);
     inputBox.appendChild(matchcaseButtonBox);
-    inputBox.appendChild(matchWholeTextButtonBox);
+    // inputBox.appendChild(matchWholeTextButtonBox);
 
     // 将输入框添加到内容区域
     this.floatingBox.appendChild(inputBox);
@@ -395,6 +433,19 @@ class FloatingSearchBox extends HTMLElement {
 
     // 将悬浮框添加到文档中
     this.shadowRoot?.appendChild(this.floatingBox);
+  }
+
+  attributeChangedCallback(name: string, _: string, newValue: string) {
+    if (name === 'data-loading') {
+      this.loading = newValue as LoadingEnum;
+      setStyle(this.loadingIcon!, {
+        display: this.loading === LoadingEnum.Loading ? 'block' : 'none',
+        animation:
+          this.loading === LoadingEnum.Loading
+            ? 'spin 1s linear infinite'
+            : 'none',
+      });
+    }
   }
 }
 

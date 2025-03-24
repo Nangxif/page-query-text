@@ -2,7 +2,6 @@ import CloseIcon from '@/assets/images/close-icon.png';
 import DragIcon from '@/assets/images/drag-icon.png';
 import LogoIcon from '@/assets/images/logo.png';
 import MatchCaseIcon from '@/assets/images/match-case-icon.png';
-import MatchWholeTextIcon from '@/assets/images/match-whole-text-icon.png';
 import NextIcon from '@/assets/images/next-icon.png';
 import PrevIcon from '@/assets/images/prev-icon.png';
 import SettingsIcon from '@/assets/images/setting-icon.png';
@@ -103,7 +102,8 @@ const Instruction = () => {
                   top: '3px',
                 }}
               />
-              区分大小写搜索”，“
+              区分大小写搜索”，
+              {/* “
               <img
                 src={MatchWholeTextIcon}
                 style={{
@@ -112,7 +112,8 @@ const Instruction = () => {
                   top: '3px',
                 }}
               />
-              是否全匹配关键字搜索”，“
+              是否全匹配关键字搜索”， */}
+              “
               <img
                 src={PrevIcon}
                 style={{
@@ -156,9 +157,9 @@ const Instruction = () => {
             <li>
               点击“区分大小写搜索”按钮，可以开启和关闭区分大小写搜索的功能
             </li>
-            <li>
+            {/* <li>
               点击“是否全匹配关键字搜索”按钮，可以开启和关闭是否全匹配关键字搜索的功能，比如，如果开启全匹配关键字功能，在检索“你好”关键字时，需要“你好“二字前后为空格或者为标点符号才可命中搜索条件
-            </li>
+            </li> */}
             <li>点击“向前搜索”按钮，可以在当前查看的高亮关键字往前跳一个</li>
             <li>
               点击“向后搜索”按钮，可以在当前查看的高亮关键字往后跳一个（注意：前后搜索按钮在正常的，简单的页面布局下可能可以实现从上到下或者从左到右的跳转，在复杂的页面下可能跳转位置无法预测）
