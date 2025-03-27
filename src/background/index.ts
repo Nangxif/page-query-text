@@ -7,4 +7,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     sendResponse({ status: 'success' });
   }
+  if (request.action === 'insertSearchBox') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs.length > 0) {
+        chrome.tabs.sendMessage(tabs[0].id!, { action: 'insertSearchBox' });
+      }
+    });
+  }
 });

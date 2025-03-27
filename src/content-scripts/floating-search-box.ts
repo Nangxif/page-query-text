@@ -13,10 +13,10 @@ import SettingsIcon from '../assets/images/setting-icon.png';
 class FloatingSearchBox extends HTMLElement {
   private floatingBox: HTMLElement | null = null;
   private dragButton: HTMLElement | null = null;
+  private input: HTMLInputElement | null = null;
   private loadingIcon: HTMLElement | null = null;
   private searchResultId: string = `search-result`;
   private matchCase = MatchCaseEnum.DontMatch;
-  // private matchWholeText = MatchWholeTextEnum.False;
   private startX = 0;
   private startY = 0;
   private translateX = 0;
@@ -24,7 +24,13 @@ class FloatingSearchBox extends HTMLElement {
   private loading = LoadingEnum.Loaded;
 
   static get observedAttributes() {
-    return ['data-fixed', 'data-startx', 'data-starty', 'data-loading'];
+    return [
+      'data-fixed',
+      'data-startx',
+      'data-starty',
+      'data-loading',
+      'data-selected-content',
+    ];
   }
 
   constructor() {
@@ -159,9 +165,9 @@ class FloatingSearchBox extends HTMLElement {
       marginRight: '12px',
     });
 
-    const input = document.createElement('input');
-    input.type = 'text';
-    setStyle(input, {
+    this.input = document.createElement('input');
+    this.input.type = 'text';
+    setStyle(this.input, {
       flex: '1',
       width: '100%',
       height: '26px',
@@ -172,17 +178,28 @@ class FloatingSearchBox extends HTMLElement {
       padding: '0 10px',
       background: 'transparent',
     });
-    input.autofocus = true;
-    input.placeholder = '查找';
+    this.input.autofocus = true;
+    this.input.placeholder = '查找';
+    if (this.dataset.selectedContent) {
+      this.input.value = this.dataset.selectedContent;
+      const timer = setTimeout(() => {
+        this.dispatchEvent(
+          new CustomEvent('search', {
+            detail: this.dataset.selectedContent,
+          }),
+        );
+        clearTimeout(timer);
+      }, 100);
+    }
     // 绑定事件，当输入框内容变化时，调用search函数
-    input.addEventListener('input', (e) => {
+    this.input.addEventListener('input', (e) => {
       this.dispatchEvent(
         new CustomEvent('search', {
           detail: (e.target as HTMLInputElement).value,
         }),
       );
     });
-    input.addEventListener('keydown', (e) => {
+    this.input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         this.dispatchEvent(
           new CustomEvent('search', {
@@ -191,6 +208,7 @@ class FloatingSearchBox extends HTMLElement {
         );
       }
     });
+    inputBox.appendChild(this.input);
 
     this.loadingIcon = document.createElement('div');
     setStyle(this.loadingIcon, {
@@ -255,59 +273,8 @@ class FloatingSearchBox extends HTMLElement {
     });
     matchcaseButtonBox.appendChild(matchCaseButtonIcon);
 
-    // const matchWholeTextButtonBox = document.createElement('div');
-    // setStyle(matchWholeTextButtonBox, {
-    //   width: '22px',
-    //   height: '22px',
-    //   display: 'flex',
-    //   alignItems: 'center',
-    //   justifyContent: 'center',
-    //   cursor: 'pointer',
-    //   borderRadius: '4px',
-    //   marginRight: '4px',
-    // });
-    // matchWholeTextButtonBox.onmouseenter = () => {
-    //   setStyle(matchWholeTextButtonBox, {
-    //     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    //   });
-    // };
-    // matchWholeTextButtonBox.onmouseleave = () => {
-    //   if (this.matchWholeText === MatchWholeTextEnum.False) {
-    //     setStyle(matchWholeTextButtonBox, {
-    //       backgroundColor: 'transparent',
-    //     });
-    //   }
-    // };
-    // matchWholeTextButtonBox.onclick = () => {
-    //   this.matchWholeText =
-    //     this.matchWholeText === MatchWholeTextEnum.False
-    //       ? MatchWholeTextEnum.True
-    //       : MatchWholeTextEnum.False;
-    //   if (this.matchWholeText === MatchWholeTextEnum.True) {
-    //     setStyle(matchWholeTextButtonBox, {
-    //       backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    //     });
-    //   }
-    //   this.dispatchEvent(
-    //     new CustomEvent('matchwholetextchange', {
-    //       detail: this.matchWholeText,
-    //     }),
-    //   );
-    // };
-    // const matchWholeTextButtonIcon = document.createElement('div');
-    // setStyle(matchWholeTextButtonIcon, {
-    //   width: '18px',
-    //   height: '18px',
-    //   userSelect: 'none',
-    //   backgroundImage: `url(${MatchWholeTextIcon})`,
-    //   backgroundSize: '100% 100%',
-    // });
-    // matchWholeTextButtonBox.appendChild(matchWholeTextButtonIcon);
-
-    inputBox.appendChild(input);
     inputBox.appendChild(this.loadingIcon);
     inputBox.appendChild(matchcaseButtonBox);
-    // inputBox.appendChild(matchWholeTextButtonBox);
 
     // 将输入框添加到内容区域
     this.floatingBox.appendChild(inputBox);
@@ -436,15 +403,32 @@ class FloatingSearchBox extends HTMLElement {
   }
 
   attributeChangedCallback(name: string, _: string, newValue: string) {
+    if (name === 'data-selected-content') {
+      if (this.input) {
+        this.input!.value = newValue;
+        this.dispatchEvent(
+          new CustomEvent('search', {
+            detail: newValue,
+          }),
+        );
+      }
+    }
     if (name === 'data-loading') {
       this.loading = newValue as LoadingEnum;
-      setStyle(this.loadingIcon!, {
-        display: this.loading === LoadingEnum.Loading ? 'block' : 'none',
-        animation:
-          this.loading === LoadingEnum.Loading
-            ? 'spin 1s linear infinite'
-            : 'none',
-      });
+      if (this.loading === LoadingEnum.Loading) {
+        setStyle(this.loadingIcon!, {
+          display: 'block',
+          animation: 'spin 1s linear infinite',
+        });
+      } else if (this.loading === LoadingEnum.Loaded) {
+        const timer = setTimeout(() => {
+          setStyle(this.loadingIcon!, {
+            display: 'none',
+            animation: 'none',
+          });
+          clearTimeout(timer);
+        }, 100);
+      }
     }
   }
 }

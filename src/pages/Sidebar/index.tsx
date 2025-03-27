@@ -7,6 +7,7 @@ import {
   ConfigProvider,
   Form,
   message,
+  Modal,
   Switch,
 } from 'antd';
 import { useEffect } from 'react';
@@ -57,6 +58,26 @@ const Sidebar: React.FC = () => {
       fixed: values.fixed,
     });
     message.success('保存成功，刷新页面之后配置才可生效');
+  };
+
+  const handleReset = () => {
+    Modal.confirm({
+      title: '确定要重置配置吗？',
+      content: '重置配置后，刷新页面之后配置才可生效',
+      onOk: () => {
+        form.setFieldsValue(defaultConfig);
+        chrome.storage.sync.set({
+          shortcut: defaultConfig.shortcut,
+          color: defaultConfig.color,
+          bgColor: defaultConfig.bgColor,
+          selectedColor: defaultConfig.selectedColor,
+          selectedBgColor: defaultConfig.selectedBgColor,
+        });
+        message.success('重置成功，刷新页面之后配置才可生效');
+      },
+      cancelText: '取消',
+      okText: '确定',
+    });
   };
   return (
     <ConfigProvider
@@ -172,11 +193,6 @@ const Sidebar: React.FC = () => {
         <FormItem noStyle shouldUpdate>
           {({ getFieldsValue }) => {
             const { selectedColor, selectedBgColor } = getFieldsValue();
-            console.log(
-              'selectedColor, selectedBgColor',
-              selectedColor,
-              selectedBgColor,
-            );
             return (
               <Card className={styles.card} title="示例">
                 <p
@@ -201,6 +217,14 @@ const Sidebar: React.FC = () => {
         </FormItem>
         <Button type="primary" htmlType="submit" className={styles['save-btn']}>
           保存
+        </Button>
+        <Button
+          type="primary"
+          className={styles['save-btn']}
+          onClick={handleReset}
+          danger
+        >
+          重置成默认配置
         </Button>
         <Button
           type="link"

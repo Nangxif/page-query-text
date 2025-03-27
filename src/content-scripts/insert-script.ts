@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable @typescript-eslint/no-loop-func */
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 import { defaultConfig } from '@/constants';
 import { LoadingEnum, MatchCaseEnum } from '@/types';
 import {
@@ -47,15 +48,6 @@ function isElementTagVisible(element: HTMLElement) {
       ) {
         return false;
       }
-
-      // const style = window.getComputedStyle(current);
-      // if (
-      //   style.display === 'none' ||
-      //   style.visibility === 'hidden' ||
-      //   style.opacity === '0'
-      // ) {
-      //   return false;
-      // }
     }
     current = current.parentNode as HTMLElement;
   }
@@ -73,6 +65,8 @@ function isElementStyleVisible(element: HTMLElement) {
         style.display === 'none' ||
         style.visibility === 'hidden' ||
         style.opacity === '0'
+        // (style.width === '0px' && style.overflow !== 'visible') ||
+        // (style.height === '0px' && style.overflow !== 'visible')
       ) {
         return false;
       }
@@ -131,6 +125,10 @@ function insertSearchBox() {
   searchBox.setAttribute('data-fixed', config.fixed.toString());
   searchBox.setAttribute('data-startx', config.startX.toString());
   searchBox.setAttribute('data-starty', config.startY.toString());
+  // 获取当前页面选中的内容
+  const currentSelectedContent = document.getSelection()?.toString();
+  currentSelectedContent &&
+    searchBox.setAttribute('data-selected-content', currentSelectedContent);
   document.documentElement.appendChild(searchBox);
   searchBox.addEventListener('setting', () => {
     chrome.runtime.sendMessage({ action: 'openSidePanel' }, (response) => {
@@ -144,11 +142,18 @@ function insertSearchBox() {
   const queryTextFn = debounceFn(queryText, 500);
   searchBox.addEventListener('search', queryTextFn);
   searchBox.addEventListener('matchcasechange', matchCaseChange);
-  // searchBox.addEventListener('matchwholetextchange', matchWholeTextChange);
   searchBox.addEventListener('searchprevious', searchPrevious);
   searchBox.addEventListener('searchnext', searchNext);
   searchBox.addEventListener('move', moveSearchBox);
   searchBox.addEventListener('close', closeSearchBox);
+}
+
+// 更新搜索内容
+function updateSearchContent() {
+  // 获取当前页面选中的内容
+  const currentSelectedContent = document.getSelection()?.toString();
+  currentSelectedContent &&
+    searchBox!.setAttribute('data-selected-content', currentSelectedContent);
 }
 
 // 移动
@@ -163,6 +168,9 @@ function moveSearchBox(e: any) {
 
 // 向前查找
 function searchPrevious() {
+  if (highlightNodes.length === 0) {
+    return;
+  }
   updateKeywordStyle(highlightNodes[currentIndex - 1], {
     color: config.color,
     'background-color': config.bgColor,
@@ -173,12 +181,18 @@ function searchPrevious() {
     color: config.selectedColor,
     'background-color': config.selectedBgColor,
   });
-  renderSearchResult(currentIndex, highlightNodes.length);
-  highlightNodes[currentIndex - 1].scrollIntoView();
+  renderSearchResult();
+  highlightNodes[currentIndex - 1].scrollIntoView({
+    behavior: 'smooth',
+    block: 'center',
+  });
 }
 
 // 向后查找
 function searchNext() {
+  if (highlightNodes.length === 0) {
+    return;
+  }
   updateKeywordStyle(highlightNodes[currentIndex - 1], {
     color: config.color,
     'background-color': config.bgColor,
@@ -190,8 +204,11 @@ function searchNext() {
     color: config.selectedColor,
     'background-color': config.selectedBgColor,
   });
-  renderSearchResult(currentIndex, highlightNodes.length);
-  highlightNodes[currentIndex - 1].scrollIntoView();
+  renderSearchResult();
+  highlightNodes[currentIndex - 1].scrollIntoView({
+    behavior: 'smooth',
+    block: 'center',
+  });
 }
 
 function matchCaseChange(e: any) {
@@ -200,18 +217,15 @@ function matchCaseChange(e: any) {
   queryText(keyword);
 }
 
-// function matchWholeTextChange(e: any) {
-//   const newMatchWholeText = e?.detail as MatchWholeTextEnum;
-//   matchWholeText = newMatchWholeText;
-//   queryText(keyword);
-// }
 // 关闭搜索工具
 function closeSearchBox() {
   searchBox?.remove();
   searchBox = null;
   textContentParentNodesMap.clear();
   matchCase = MatchCaseEnum.DontMatch;
+  resetNeedRenderHighlightParentNodes();
   needRenderHighlightParentNodes = [];
+  highlightNodes = [];
   keyword = '';
   currentIndex = 1;
   isOpen = false;
@@ -231,12 +245,7 @@ function queryText(e: any) {
     if (keyword && texts && texts.length > 0) {
       if (
         texts?.some((text) =>
-          isExactMatch(
-            text,
-            keyword,
-            matchCase === MatchCaseEnum.Match,
-            // matchWholeText === MatchWholeTextEnum.True,
-          ),
+          isExactMatch(text, keyword, matchCase === MatchCaseEnum.Match),
         )
       ) {
         const originChildNodes = Array.from(parentNode.childNodes).map((node) =>
@@ -259,15 +268,83 @@ function queryText(e: any) {
     const node = needRenderHighlightParentNodes[i];
     renderHighlightKeyword(node.parentNode, keyword);
   }
-  renderSearchResult(currentIndex, highlightNodes.length);
+  computedViewportClosestNodeAndScrollToIt();
+  renderSearchResult();
   searchBox?.setAttribute('data-loading', LoadingEnum.Loaded);
 }
 
-function renderSearchResult(currentIndex: number, total: number) {
+// 计算出needRenderHighlightParentNodes里面的节点，距离当前可视区最近的，或者已经在可视区内的
+function computedViewportClosestNodeAndScrollToIt() {
+  if (highlightNodes.length > 0) {
+    // 获取视口高度
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    // 找到视口内的节点或最近的节点
+    let closestNode = highlightNodes[0];
+    let minDistance = Infinity;
+
+    for (let i = 0; i < highlightNodes.length; i++) {
+      const node = highlightNodes[i];
+      const rect = node.getBoundingClientRect();
+
+      // 检查节点是否在视口内
+      if (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= viewportHeight &&
+        rect.right <= viewportWidth
+      ) {
+        // 节点在视口内，设置为当前节点并跳出循环
+        closestNode = node;
+        currentIndex = i + 1;
+        break;
+      }
+
+      // 计算节点到视口中心的距离
+      const viewportCenterX = viewportWidth / 2;
+      const viewportCenterY = viewportHeight / 2;
+      const nodeCenterX = (rect.left + rect.right) / 2;
+      const nodeCenterY = (rect.top + rect.bottom) / 2;
+
+      const distance = Math.sqrt(
+        Math.pow(nodeCenterX - viewportCenterX, 2) +
+          Math.pow(nodeCenterY - viewportCenterY, 2),
+      );
+
+      // 更新最近的节点
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestNode = node;
+        currentIndex = i + 1;
+      }
+    }
+
+    // 高亮显示最近或视口内的节点
+    updateKeywordStyle(closestNode, {
+      color: config.selectedColor,
+      'background-color': config.selectedBgColor,
+    });
+
+    // 如果节点不在视口内，滚动到该节点
+    const rect = closestNode.getBoundingClientRect();
+    if (
+      rect.top < 0 ||
+      rect.left < 0 ||
+      rect.bottom > viewportHeight ||
+      rect.right > viewportWidth
+    ) {
+      closestNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+}
+
+function renderSearchResult() {
   if (searchBox?.shadowRoot?.querySelector('#search-result')) {
-    searchBox.shadowRoot.querySelector('#search-result')!.textContent = total
-      ? `第${currentIndex}项，共${total}项`
-      : searchResultEmptyText;
+    searchBox.shadowRoot.querySelector('#search-result')!.textContent =
+      highlightNodes.length
+        ? `第${currentIndex}项，共${highlightNodes.length}项`
+        : searchResultEmptyText;
   }
 }
 
@@ -299,12 +376,7 @@ function renderHighlightKeyword(parentNode: Node, keyword: string) {
       (matchCase === MatchCaseEnum.DontMatch &&
         text.toLowerCase().includes(keyword.toLowerCase()))
     ) {
-      const parts = splitText(
-        text,
-        keyword,
-        matchCase === MatchCaseEnum.Match,
-        // matchWholeText === MatchWholeTextEnum.True,
-      );
+      const parts = splitText(text, keyword, matchCase === MatchCaseEnum.Match);
       const matchKeywords = Array.from(
         text.matchAll(
           new RegExp(keyword, matchCase === MatchCaseEnum.Match ? 'mg' : 'img'),
@@ -415,6 +487,19 @@ window.addEventListener('load', () => {
             if (!isOpen) {
               isOpen = true;
               insertSearchBox();
+            } else {
+              updateSearchContent();
+            }
+          }
+        });
+
+        chrome.runtime.onMessage.addListener((request) => {
+          if (request.action === 'insertSearchBox') {
+            if (!isOpen) {
+              isOpen = true;
+              insertSearchBox();
+            } else {
+              updateSearchContent();
             }
           }
         });
