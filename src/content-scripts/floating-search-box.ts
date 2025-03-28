@@ -22,6 +22,9 @@ class FloatingSearchBox extends HTMLElement {
   private translateX = 0;
   private translateY = 0;
   private loading = LoadingEnum.Loaded;
+  private searchBoxWidth = 420;
+  private searchBoxHeight = 38;
+  private searchBoxMargin = 20;
 
   static get observedAttributes() {
     return [
@@ -40,7 +43,6 @@ class FloatingSearchBox extends HTMLElement {
 
   connectedCallback() {
     this.createFloatingBox();
-    console.log('====悬浮搜索框已创建====');
   }
 
   private createFloatingBox() {
@@ -57,13 +59,14 @@ class FloatingSearchBox extends HTMLElement {
     // 创建悬浮框
     this.floatingBox = document.createElement('div');
     setStyle(this.floatingBox, {
+      boxSizing: 'border-box',
       display: 'flex',
       alignItems: 'center',
       position: 'fixed',
-      top: '20px',
-      right: '20px',
-      width: 'calc(100vw - 60px)',
-      maxWidth: '400px',
+      top: `${this.searchBoxMargin}px`,
+      right: `${this.searchBoxMargin}px`,
+      width: `${this.searchBoxWidth}px`,
+      height: `${this.searchBoxHeight}px`,
       padding: '6px 4px',
       backgroundColor: 'rgb(32 32 32)',
       borderRadius: '4px',
@@ -85,21 +88,41 @@ class FloatingSearchBox extends HTMLElement {
 
     const that = this;
     function handleMouseMove(e: any) {
+      // 这里要判断有没有超出屏幕
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      let translateX = that.startX + e.clientX - that.translateX;
+      let translateY = that.startY + e.clientY - that.translateY;
+
+      if (
+        translateX <
+        -(windowWidth - that.searchBoxWidth - 2 * that.searchBoxMargin)
+      ) {
+        translateX = -(
+          windowWidth -
+          that.searchBoxWidth -
+          2 * that.searchBoxMargin
+        );
+      }
+      if (translateX > 0) {
+        translateX = 0;
+      }
+      if (
+        translateY >
+        windowHeight - that.searchBoxHeight - 2 * that.searchBoxMargin
+      ) {
+        translateY =
+          windowHeight - that.searchBoxHeight - 2 * that.searchBoxMargin;
+      }
+      if (translateY < 0) {
+        translateY = 0;
+      }
       setStyle(that.floatingBox!, {
-        transform: `translate3d(${
-          that.startX + e.clientX - that.translateX
-        }px,${that.startY + e.clientY - that.translateY}px,0)`,
+        transform: `translate3d(${translateX}px,${translateY}px,0)`,
       });
     }
-
-    this.dragButton.addEventListener('mousedown', (e) => {
-      if (that.dataset.fixed === 'true') return; // 如果固定则不拖拽
-      that.translateX = e.clientX;
-      that.translateY = e.clientY;
-      document.addEventListener('mousemove', handleMouseMove);
-    });
-
-    this.dragButton.addEventListener('mouseup', (e) => {
+    // 创建一个单独的mouseup处理函数
+    function handleMouseUp(e: MouseEvent) {
       that.startX = that.startX + e.clientX - that.translateX;
       that.startY = that.startY + e.clientY - that.translateY;
       that.dispatchEvent(
@@ -111,7 +134,16 @@ class FloatingSearchBox extends HTMLElement {
         }),
       );
       document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp); // 移除全局mouseup监听
+    }
+    this.dragButton.addEventListener('mousedown', (e) => {
+      if (that.dataset.fixed === 'true') return; // 如果固定则不拖拽
+      that.translateX = e.clientX;
+      that.translateY = e.clientY;
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     });
+
     this.floatingBox.appendChild(this.dragButton);
 
     // 设置按钮

@@ -79,6 +79,14 @@ const Sidebar: React.FC = () => {
       okText: '确定',
     });
   };
+
+  const handleResetPosition = () => {
+    chrome.storage.local.set({
+      startX: 0,
+      startY: 0,
+    });
+    message.success('搜索栏已挪动到初始位置，刷新页面之后配置才可生效');
+  };
   return (
     <ConfigProvider
       theme={{
@@ -233,6 +241,14 @@ const Sidebar: React.FC = () => {
           danger
         >
           重置成默认配置
+        </Button>
+        <Button
+          type="primary"
+          className={styles['save-btn']}
+          onClick={handleResetPosition}
+          ghost
+        >
+          将搜索栏挪动到初始位置
         </Button>
         <Button
           type="link"
