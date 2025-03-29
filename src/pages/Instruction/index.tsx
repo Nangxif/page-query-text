@@ -170,6 +170,25 @@ const Instruction = () => {
           </ul>
         </Paragraph>
       </Typography>
+      <Typography>
+        <Title
+          level={4}
+          style={{
+            color: 'white',
+          }}
+        >
+          不足之处
+        </Title>{' '}
+        <Paragraph
+          style={{
+            color: 'white',
+          }}
+        >
+          <ul>
+            <li>输入框类控件里的文本无法识别和高亮</li>
+          </ul>
+        </Paragraph>
+      </Typography>
 
       <Button
         type="link"

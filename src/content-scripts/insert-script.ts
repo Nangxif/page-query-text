@@ -43,8 +43,8 @@ function isElementTagVisible(element: HTMLElement) {
       // 跳过特定标签
       if (
         current.nodeName === 'SCRIPT' ||
-        current.nodeName === 'STYLE' ||
-        current.nodeName === 'HIGHLIGHT'
+        current.nodeName === 'NOSCRIPT' ||
+        current.nodeName === 'STYLE'
       ) {
         return false;
       }
