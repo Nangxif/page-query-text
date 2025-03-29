@@ -178,7 +178,7 @@ const Instruction = () => {
           }}
         >
           不足之处
-        </Title>{' '}
+        </Title>
         <Paragraph
           style={{
             color: 'white',
