@@ -1,9 +1,11 @@
 {
+  "name": "page-query-text",
+  "version": "1.0",
   "private": true,
   "license": "MIT",
   "author": "fangyankai <575981390@qq.com>",
   "scripts": {
-    "build": "max build && pnpm  build-scripts",
+    "build": "max build && pnpm  build-scripts && cd dist && node ../scripts/zip.js && node ../scripts/generate-release-yml.js",
     "build-scripts": "rollup -c config/rollup.config.mjs",
     "dev": "max dev",
     "format": "prettier --cache --write .",

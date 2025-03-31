@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+       # 1. 检出代码
+      - uses: actions/checkout@v4
+      # 2. 创建 Release（必须步骤，生成 upload_url）
+      - name: Create Release
+        id: create_release  # 注意这里的 id，后续步骤会引用它的 outputs
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.UPLOADRELEASEASSET }}  # 默认权限足够，无需额外配置
+        with:
+          tag_name: ${{ github.ref_name }}  # 使用触发的 Tag（如 v1.0）
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+      - name: Upload ZIP Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.UPLOADRELEASEASSET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build-assets/page-query-text-v1.0.zip
+          asset_name: page-query-text-v1.0.zip
+          asset_content_type: application/zip
