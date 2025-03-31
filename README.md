@@ -4,8 +4,13 @@
 # PageQueryText - 浏览器文本搜索插件
 
   <p>
-    <img src="https://img.shields.io/badge/Release-V1.0-blue" alt="Release">
-    <img src="https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-green" alt="License">
+    <a href="https://github.com/Nangxif/query-text-extension/releases">
+      <img src="https://img.shields.io/badge/Release-V1.0-blue" alt="Release">
+    </a>
+    <a href="https://github.com/Nangxif/query-text-extension?tab=MIT-1-ov-file">
+      <img src="https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-green" alt="License">
+    </a>
+    <a>
     <img src="https://img.shields.io/badge/Stars-0%20⭐-yellow" alt="Stars">
     <img src="https://img.shields.io/badge/Downloads-0%20↓-brightgreen" alt="Downloads">
   </p>
