@@ -28,6 +28,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.UPLOADRELEASEASSET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/page-query-text-v1.0.zip
+          asset_path: ./build-assets/page-query-text-v1.0.zip
           asset_name: page-query-text-v1.0.zip
           asset_content_type: application/zip
