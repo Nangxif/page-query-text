@@ -12,7 +12,7 @@ jobs:
       - name: Upload ZIP Release Asset
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.UPLOADRELEASEASSET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./dist/page-query-text-v1.0.zip
