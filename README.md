@@ -30,7 +30,7 @@ PageQueryText 是一款复刻 VSCode 文本搜索体验的谷歌浏览器插件�
 
 ## 安装方法
 
-1. 从 [Chrome 网上应用店](https://chrome.google.com/webstore) 下载安装
+1. 从 [Edge 扩展商店](https://microsoftedge.microsoft.com/addons/detail/pagequerytext/kheinofeolmioohhojfaiedfopfmabkc?hl=zh-CN) 下载安装
 2. 或手动安装：
    - 下载源码
    - 在 Chrome 中打开 `chrome://extensions/`

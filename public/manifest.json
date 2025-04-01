@@ -1,7 +1,7 @@
 {
   "name": "PageQueryText",
   "description": "复刻代码编辑器vscode的文本搜索插件",
-  "version": "1.0",
+  "version": "1.0.0",
   "manifest_version": 3,
   "background": {
     "service_worker": "background/background.js"

@@ -189,6 +189,40 @@ const Instruction = () => {
           </ul>
         </Paragraph>
       </Typography>
+      <Typography>
+        <Title
+          level={4}
+          style={{
+            color: 'white',
+          }}
+        >
+          问题反馈
+        </Title>
+        <Paragraph
+          style={{
+            color: 'white',
+          }}
+        >
+          <ul>
+            <li>
+              使用过程中如果遇到问题，可以点击“
+              <Button
+                type="link"
+                size="small"
+                style={{ padding: 0 }}
+                onClick={() => {
+                  chrome.tabs.create({
+                    url: 'https://github.com/Nangxif/page-query-text/issues',
+                  });
+                }}
+              >
+                issues
+              </Button>
+              ”选择问题反馈模板进行反馈
+            </li>
+          </ul>
+        </Paragraph>
+      </Typography>
 
       <Button
         type="link"
