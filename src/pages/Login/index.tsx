@@ -1,36 +1,56 @@
+import { ResponseCode } from '@/constants';
 import { GithubOutlined } from '@ant-design/icons';
-import { Button, Form, Input } from 'antd';
-import { useState } from 'react';
+import { Button, Form, Input, message } from 'antd';
+import { useRef, useState } from 'react';
 import styles from './index.less';
+import { getEmailCodeService, loginService } from './service';
 
-const { Item: FormItem } = Form;
+const { Item: FormItem, useForm } = Form;
 const Login = () => {
-  const [isCodeSent, setIsCodeSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [form] = useForm();
+  const [isGetCodeLoading, setIsGetCodeLoading] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(60);
+  const emailCodeTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const handleEmailSubmit = async (e: any) => {
-    e.preventDefault();
+  const handleGetCode = async () => {
+    const email = form.getFieldValue('email');
+    if (!email) {
+      message.error('请输入邮箱地址');
+      return;
+    }
+    setIsGetCodeLoading(true);
+    const res = await getEmailCodeService(email);
+    if (res.code === ResponseCode.SUCCESS) {
+      message.success('验证码发送成功');
+      emailCodeTimer.current = setInterval(() => {
+        setRemainingTime((prev) => prev - 1);
+        if (remainingTime <= 0) {
+          clearInterval(emailCodeTimer.current as NodeJS.Timeout);
+          setRemainingTime(60);
+        }
+      }, 1000);
+    }
+    setIsGetCodeLoading(false);
+  };
+
+  const handleEmailSubmit = async (values: any) => {
     setIsLoading(true);
 
     try {
-      if (!isCodeSent) {
-        // 发送验证码请求
-        setIsCodeSent(true);
+      const res = await loginService(values.email, values.code);
+      if (res.code === ResponseCode.SUCCESS) {
+        window.location.href = '/UserInfo.html';
       } else {
-        // 验证验证码请求
-        // 登录成功后的处理，比如重定向或状态更新
-        window.location.href = '/dashboard';
+        message.error(res.message);
       }
-    } catch (err) {
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGithubLogin = () => {
-    // 重定向到GitHub授权页面
-    window.location.href =
-      'https://github.com/login/oauth/authorize?client_id=YOUR_GITHUB_CLIENT_ID';
+  const handleGithubLogin = async () => {
+    window.location.href = `http://localhost:3001/api/auth/github`;
   };
 
   return (
@@ -43,13 +63,38 @@ const Login = () => {
           onFinish={handleEmailSubmit}
           className={styles['login-form']}
           layout="vertical"
+          form={form}
         >
-          <FormItem label="邮箱地址" name="email">
+          <FormItem
+            label="邮箱地址"
+            name="email"
+            rules={[{ required: true, message: '请输入邮箱地址' }]}
+          >
             <Input type="email" placeholder="请输入邮箱地址" allowClear />
           </FormItem>
 
-          <FormItem label="验证码" name="code">
-            <Input placeholder="请输入6位验证码" allowClear />
+          <FormItem
+            label="验证码"
+            name="code"
+            rules={[{ required: true, message: '请输入6位验证码' }]}
+          >
+            <Input
+              placeholder="请输入6位验证码"
+              allowClear
+              addonAfter={
+                <Button
+                  size="small"
+                  type="link"
+                  onClick={handleGetCode}
+                  loading={isGetCodeLoading}
+                  disabled={remainingTime > 0 && remainingTime < 60}
+                >
+                  {remainingTime > 0 && remainingTime < 60
+                    ? `获取验证码(${remainingTime}s)`
+                    : '获取验证码'}
+                </Button>
+              }
+            />
           </FormItem>
 
           <Button
@@ -60,7 +105,7 @@ const Login = () => {
               width: '100%',
             }}
           >
-            {isLoading ? '处理中...' : isCodeSent ? '登录' : '获取验证码'}
+            登录
           </Button>
         </Form>
 

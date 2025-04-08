@@ -1,3 +1,5 @@
+import { AccountType, PaymentMethod } from '@/pages/UserInfo/service';
+
 export const defaultConfig = {
   shortcut: ['ctrlKey', 'f'],
   // 文字高亮常用的颜色
@@ -53,4 +55,19 @@ export const textStyleProperties = [
 
   // 其他可能影响文本的属性
   'vertical-align',
+];
+
+export const ResponseCode = {
+  SUCCESS: 200,
+  ERROR: 500,
+};
+
+export const accountTypeTextOptions = [
+  { label: '邮箱登录', value: AccountType.EMAIL },
+  { label: 'GitHub登录', value: AccountType.GITHUB },
+];
+
+export const paymentMethodTextOptions = [
+  { label: '支付宝', value: PaymentMethod.ALIPAY },
+  { label: '微信', value: PaymentMethod.WECHAT },
 ];

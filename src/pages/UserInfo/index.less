@@ -1,0 +1,97 @@
+// 引入全局样式
+@import '../../global.less';
+
+.content-wrapper {
+  display: flex;
+  justify-content: center;
+  padding-top: 34px;
+  gap: 24px;
+
+  .tabs {
+    flex: 0 0 166px;
+    padding: 24px;
+    height: min-content;
+    background: #fff;
+    border-radius: 12px;
+
+    .tab {
+      font-size: 14px;
+      color: theme('colors.text-secondary');
+      line-height: 22px;
+      cursor: pointer;
+      user-select: none;
+
+      &:not(:last-child) {
+        margin-bottom: 12px;
+      }
+
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+
+    .active-tab {
+      font-weight: 500;
+      color: theme('colors.text-strong');
+      position: relative;
+
+      &:hover {
+        opacity: 1;
+      }
+
+      &::before {
+        content: '';
+        position: absolute;
+        width: 2px;
+        height: 22px;
+        background: theme('ant.colorPrimary');
+        left: -24px;
+        bottom: 0;
+      }
+    }
+  }
+
+  .card {
+    max-width: 548px;
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    padding: 24px;
+
+    .title {
+      font-weight: 500;
+      font-size: 16px;
+      color: theme('colors.text-strong');
+      line-height: 24px;
+      margin-bottom: 24px;
+    }
+
+    .avatar {
+      width: 80px;
+      height: 80px;
+      font-size: 36px;
+      border-radius: 50%;
+      margin-bottom: 24px;
+    }
+
+    .input {
+      height: 42px;
+      font-size: 14px;
+      border-radius: 6px;
+      color: theme('colors.text-regular');
+
+      &:disabled {
+        border-color: theme('ant.colorBorderSecondary');
+      }
+    }
+
+    .text-botton {
+      color: theme('colors.primary-600');
+      cursor: pointer;
+    }
+
+    .submit-button {
+      height: 36px;
+    }
+  }
+}

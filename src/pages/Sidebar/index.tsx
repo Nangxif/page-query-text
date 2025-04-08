@@ -29,7 +29,7 @@ const Sidebar: React.FC = () => {
 
   // 初始化数据
   useEffect(() => {
-    chrome.storage.sync.get(
+    chrome?.storage?.sync?.get(
       [
         'shortcut',
         'color',
@@ -49,7 +49,7 @@ const Sidebar: React.FC = () => {
     const bgColor = formatColor(values.bgColor);
     const selectedColor = formatColor(values.selectedColor);
     const selectedBgColor = formatColor(values.selectedBgColor);
-    chrome.storage.sync.set({
+    chrome?.storage?.sync?.set({
       shortcut: values.shortcut,
       color,
       bgColor,
@@ -66,7 +66,7 @@ const Sidebar: React.FC = () => {
       content: '重置配置后，刷新页面之后配置才可生效',
       onOk: () => {
         form.setFieldsValue(defaultConfig);
-        chrome.storage.sync.set({
+        chrome?.storage?.sync?.set({
           shortcut: defaultConfig.shortcut,
           color: defaultConfig.color,
           bgColor: defaultConfig.bgColor,
@@ -81,7 +81,7 @@ const Sidebar: React.FC = () => {
   };
 
   const handleResetPosition = () => {
-    chrome.storage.local.set({
+    chrome?.storage?.local?.set({
       startX: 0,
       startY: 0,
     });

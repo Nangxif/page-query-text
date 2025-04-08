@@ -11,14 +11,21 @@
     "format": "prettier --cache --write .",
     "postinstall": "max setup",
     "prepare": "husky",
+    "service": "node service/index.mjs",
     "setup": "max setup",
     "start": "npm run dev"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
     "@ant-design/pro-components": "^2.4.4",
+    "@types/js-cookie": "^3.0.6",
     "@umijs/max": "^4.4.6",
-    "antd": "^5.4.0"
+    "ahooks": "^3.8.4",
+    "antd": "^5.4.0",
+    "axios": "^1.8.4",
+    "classnames": "^2.5.1",
+    "js-cookie": "^3.0.5",
+    "openai": "^4.91.1"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.3",
@@ -38,6 +45,7 @@
     "rollup-plugin-image": "^1.0.2",
     "rollup-plugin-terser": "^7.0.2",
     "rollup-plugin-typescript2": "^0.36.0",
+    "tailwindcss": "^3.4.12",
     "typescript": "^5.0.3"
   }
 }
