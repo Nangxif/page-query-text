@@ -15,7 +15,18 @@ export const getUserInfoService = async () => {
   return request<API.BaseResponse<UserInfoData>>('/api/user/info');
 };
 
-export enum PaymentMethod {
-  ALIPAY = 'alipay',
-  WECHAT = 'wechat',
+export enum PaymentWay {
+  ALIPAY = 'ALIPAY',
+  WECHAT = 'WECHAT',
 }
+
+export type IPayApplyParams = {
+  paymentWay: PaymentWay;
+  serialNumber: string;
+};
+export const payApplyService = async (params: IPayApplyParams) => {
+  return request<API.BaseResponse<any>>('/api/user/pay/apply', {
+    method: 'POST',
+    data: params,
+  });
+};

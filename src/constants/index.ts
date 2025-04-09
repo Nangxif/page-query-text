@@ -1,4 +1,4 @@
-import { AccountType, PaymentMethod } from '@/pages/UserInfo/service';
+import { AccountType, PaymentWay } from '@/pages/UserInfo/service';
 
 export const defaultConfig = {
   shortcut: ['ctrlKey', 'f'],
@@ -67,7 +67,7 @@ export const accountTypeTextOptions = [
   { label: 'GitHub登录', value: AccountType.GITHUB },
 ];
 
-export const paymentMethodTextOptions = [
-  { label: '支付宝', value: PaymentMethod.ALIPAY },
-  { label: '微信', value: PaymentMethod.WECHAT },
+export const paymentWayTextOptions = [
+  { label: '支付宝', value: PaymentWay.ALIPAY },
+  { label: '微信', value: PaymentWay.WECHAT },
 ];
