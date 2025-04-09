@@ -3,6 +3,7 @@ import request from '@/utils/request';
 export enum AccountType {
   EMAIL = 'email',
   GITHUB = 'github',
+  PASSWORD = 'password',
 }
 export type UserInfoData = {
   _id: string;
@@ -29,4 +30,30 @@ export const payApplyService = async (params: IPayApplyParams) => {
     method: 'POST',
     data: params,
   });
+};
+
+export const updatePasswordService = async (password: string) => {
+  return request<API.BaseResponse<boolean>>('/api/user/update/password', {
+    method: 'POST',
+    data: { password },
+  });
+};
+
+export enum PaymentStatus {
+  /** 未支付 */
+  NO_PAY = 'NO_PAY',
+  /** 已支付待审核 */
+  PAID_PENDING_REVIEW = 'PAID_PENDING_REVIEW',
+  /** 已审核 */
+  REVIEWED = 'REVIEWED',
+}
+
+export const getPayApplyInfoService = async () => {
+  return request<
+    API.BaseResponse<{
+      paymentWay: PaymentWay;
+      serialNumber: string;
+      paymentStatus: PaymentStatus;
+    }>
+  >('/api/user/pay/apply/info');
 };

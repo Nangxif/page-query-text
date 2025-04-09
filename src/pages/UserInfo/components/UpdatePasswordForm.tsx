@@ -4,6 +4,7 @@ import { ResponseCode } from '@/constants';
 import { useRequest } from 'ahooks';
 import { Button, Form, Input, message } from 'antd';
 import styles from '../index.less';
+import { updatePasswordService } from '../service';
 
 const { Item: FormItem, useForm } = Form;
 /** 更新自己密码 */
@@ -12,17 +13,13 @@ const UpdatePasswordForm = () => {
 
   const { run: onsubmit, loading } = useRequest(
     async () => {
-      // const values = await form.validateFields();
-
-      const rsp = {
-        code: ResponseCode.SUCCESS,
-        msg: '更新密码成功',
-      };
-      if (rsp.code !== ResponseCode.SUCCESS) {
-        message.error(rsp.msg || '更新密码失败');
+      const values = await form.validateFields();
+      const res = await updatePasswordService(values?.password);
+      if (res.code !== ResponseCode.SUCCESS) {
+        message.error(res.message || '更新密码失败');
         return;
       }
-      message.success('更新密码成功，即将返回官网');
+      message.success('更新密码成功');
     },
     { manual: true, throttleWait: 500 },
   );
@@ -77,7 +74,7 @@ const UpdatePasswordForm = () => {
             className={styles.input}
             maxLength={30}
             //@ts-ignore
-            autocomplete="new-password"
+            autoComplete="new-password"
             placeholder="请再次输入新密码"
             iconRender={(value) => {
               if (value) {

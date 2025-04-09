@@ -65,6 +65,7 @@ export const ResponseCode = {
 export const accountTypeTextOptions = [
   { label: '邮箱登录', value: AccountType.EMAIL },
   { label: 'GitHub登录', value: AccountType.GITHUB },
+  { label: '账号密码登录', value: AccountType.PASSWORD },
 ];
 
 export const paymentWayTextOptions = [

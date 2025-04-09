@@ -1,7 +1,8 @@
-import { ResponseCode } from '@/constants';
+import { accountTypeTextOptions, ResponseCode } from '@/constants';
 import { GithubOutlined } from '@ant-design/icons';
-import { Button, Form, Input, message } from 'antd';
+import { Button, Form, Input, message, Segmented } from 'antd';
 import { useRef, useState } from 'react';
+import { AccountType } from '../UserInfo/service';
 import styles from './index.less';
 import { getEmailCodeService, loginService } from './service';
 
@@ -12,6 +13,7 @@ const Login = () => {
   const [isGetCodeLoading, setIsGetCodeLoading] = useState(false);
   const [remainingTime, setRemainingTime] = useState(60);
   const emailCodeTimer = useRef<NodeJS.Timeout | null>(null);
+  const [accountType, setAccountType] = useState(AccountType.EMAIL);
 
   const handleGetCode = async () => {
     const email = form.getFieldValue('email');
@@ -59,63 +61,109 @@ const Login = () => {
         <div className={styles['ip-logo']} />
         <h3>欢迎登录Page Toolkit</h3>
 
-        <Form
-          onFinish={handleEmailSubmit}
-          className={styles['login-form']}
-          layout="vertical"
-          form={form}
-        >
-          <FormItem
-            label="邮箱地址"
-            name="email"
-            rules={[{ required: true, message: '请输入邮箱地址' }]}
-          >
-            <Input type="email" placeholder="请输入邮箱地址" allowClear />
-          </FormItem>
+        <Segmented
+          options={accountTypeTextOptions}
+          value={accountType}
+          onChange={(type) => setAccountType(type)}
+          className={styles['segmented-box']}
+        />
 
-          <FormItem
-            label="验证码"
-            name="code"
-            rules={[{ required: true, message: '请输入6位验证码' }]}
+        {accountType === AccountType.EMAIL && (
+          <Form
+            onFinish={handleEmailSubmit}
+            className={styles['login-form']}
+            layout="vertical"
+            form={form}
           >
-            <Input
-              placeholder="请输入6位验证码"
-              allowClear
-              addonAfter={
-                <Button
-                  size="small"
-                  type="link"
-                  onClick={handleGetCode}
-                  loading={isGetCodeLoading}
-                  disabled={remainingTime > 0 && remainingTime < 60}
-                >
-                  {remainingTime > 0 && remainingTime < 60
-                    ? `获取验证码(${remainingTime}s)`
-                    : '获取验证码'}
-                </Button>
-              }
-            />
-          </FormItem>
+            <FormItem
+              label="邮箱地址"
+              name="email"
+              rules={[{ required: true, message: '请输入邮箱地址' }]}
+            >
+              <Input type="email" placeholder="请输入邮箱地址" allowClear />
+            </FormItem>
 
-          <Button
-            htmlType="submit"
-            disabled={isLoading}
-            type="primary"
-            style={{
-              width: '100%',
-            }}
-          >
-            登录
+            <FormItem
+              label="验证码"
+              name="code"
+              rules={[{ required: true, message: '请输入6位验证码' }]}
+            >
+              <Input
+                placeholder="请输入6位验证码"
+                allowClear
+                addonAfter={
+                  <Button
+                    size="small"
+                    type="link"
+                    onClick={handleGetCode}
+                    loading={isGetCodeLoading}
+                    disabled={remainingTime > 0 && remainingTime < 60}
+                  >
+                    {remainingTime > 0 && remainingTime < 60
+                      ? `获取验证码(${remainingTime}s)`
+                      : '获取验证码'}
+                  </Button>
+                }
+              />
+            </FormItem>
+
+            <Button
+              htmlType="submit"
+              disabled={isLoading}
+              type="primary"
+              style={{
+                width: '100%',
+              }}
+            >
+              登录
+            </Button>
+          </Form>
+        )}
+
+        {accountType === AccountType.GITHUB && (
+          <Button className={styles['github-btn']} onClick={handleGithubLogin}>
+            <div className={styles['github-icon']}>
+              <GithubOutlined />
+            </div>
+            <div className={styles['github-tip']}>GitHub登录</div>
           </Button>
-        </Form>
+        )}
 
-        <Button
-          className={styles['github-btn']}
-          onClick={handleGithubLogin}
-          icon={<GithubOutlined />}
-        >
-          使用 GitHub 登录
-        </Button>
+        {accountType === AccountType.PASSWORD && (
+          <Form
+            onFinish={handleEmailSubmit}
+            className={styles['login-form']}
+            layout="vertical"
+            form={form}
+          >
+            <FormItem
+              label="邮箱地址"
+              name="email"
+              rules={[{ required: true, message: '请输入邮箱地址' }]}
+            >
+              <Input type="email" placeholder="请输入邮箱地址" allowClear />
+            </FormItem>
+
+            <FormItem
+              label="密码"
+              name="password"
+              rules={[{ required: true, message: '请输入密码' }]}
+            >
+              <Input.Password placeholder="请输入密码" allowClear />
+            </FormItem>
+
+            <Button
+              htmlType="submit"
+              disabled={isLoading}
+              type="primary"
+              style={{
+                width: '100%',
+              }}
+            >
+              登录
+            </Button>
+          </Form>
+        )}
       </div>
     </div>
   );
