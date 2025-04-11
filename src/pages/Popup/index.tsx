@@ -1,5 +1,5 @@
 import LogoIcon from '@/assets/images/logo.png';
-import { defaultConfig } from '@/constants';
+import { defaultConfig } from '@/constants/content-scripts';
 import { Button } from 'antd';
 import { useEffect, useState } from 'react';
 import styles from './index.less';

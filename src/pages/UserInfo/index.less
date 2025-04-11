@@ -59,6 +59,9 @@
     padding: 24px;
 
     .title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       font-weight: 500;
       font-size: 16px;
       color: theme('colors.text-strong');
@@ -122,6 +125,39 @@
         line-height: 22px;
         margin-bottom: 30px;
         text-align: center;
+      }
+    }
+  }
+}
+
+.radio-container {
+  display: flex;
+
+  .radio-item {
+    font-size: 14px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-right: 12px;
+    border: 1px solid #f0eeec;
+    flex: 1;
+
+    &.active {
+      border-color: #f2ede4;
+    }
+
+    .img {
+      width: 100%;
+
+      img {
+        width: 100%;
+      }
+    }
+
+    :global {
+      .ant-radio-wrapper {
+        width: 100%;
+        background-color: #fffbf0;
+        padding: 8px;
       }
     }
   }

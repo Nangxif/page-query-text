@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { LoadingEnum, MatchCaseEnum } from '@/types';
 import { setStyle } from '@/utils';
+import AIIcon from '../assets/images/ai-icon.png';
 import CloseIcon from '../assets/images/close-icon.png';
 import DragIcon from '../assets/images/drag-icon.png';
 import LoadingIcon from '../assets/images/loading-icon.png';
@@ -181,6 +182,44 @@ class FloatingSearchBox extends HTMLElement {
     });
     settingButtonBox.appendChild(settingButtonIcon);
     this.floatingBox.appendChild(settingButtonBox);
+
+    // ai按钮
+    const aiButtonBox = document.createElement('div');
+    setStyle(aiButtonBox, {
+      width: '24px',
+      height: '24px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer',
+      borderRadius: '4px',
+      marginRight: '4px',
+    });
+    aiButtonBox.onmouseenter = () => {
+      setStyle(aiButtonBox, {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      });
+    };
+    aiButtonBox.onmouseleave = () => {
+      setStyle(aiButtonBox, {
+        backgroundColor: 'transparent',
+      });
+    };
+    aiButtonBox.onclick = () => {
+      this.dispatchEvent(new CustomEvent('summary'));
+    };
+    const aiButtonIcon = document.createElement('div');
+    setStyle(aiButtonIcon, {
+      width: '16px',
+      height: '16px',
+      userSelect: 'none',
+      backgroundImage: `url(${AIIcon})`,
+      backgroundSize: '100% 100%',
+      position: 'relative',
+      top: '-1px',
+    });
+    aiButtonBox.appendChild(aiButtonIcon);
+    this.floatingBox.appendChild(aiButtonBox);
 
     // 创建输入框
     const inputBox = document.createElement('div');

@@ -1,5 +1,6 @@
 import commonjs from '@rollup/plugin-commonjs';
 import image from '@rollup/plugin-image';
+import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import { terser } from 'rollup-plugin-terser';
 import typescript from 'rollup-plugin-typescript2';
@@ -12,7 +13,11 @@ export default [
       format: 'iife', // 输出格式
     },
     plugins: [
-      resolve(), // 解析 node_modules 中的模块
+      resolve({
+        browser: true,
+        preferBuiltins: false,
+      }), // 解析 node_modules 中的模块
+      json(),
       image(),
       commonjs(), // 转换 CommonJS 模块为 ES6
       typescript(), // 使用 TypeScript
@@ -37,6 +42,20 @@ export default [
     input: 'src/content-scripts/highlight-box.ts', // insert-script 输入文件
     output: {
       file: 'dist/content-scripts/highlight-box.js', // 输出到特定目录
+      format: 'iife', // 输出格式
+    },
+    plugins: [
+      resolve(), // 解析 node_modules 中的模块
+      image(),
+      commonjs(), // 转换 CommonJS 模块为 ES6
+      typescript(), // 使用 TypeScript
+      terser(), // 压缩输出文件
+    ],
+  },
+  {
+    input: 'src/content-scripts/summary-box.ts', // insert-script 输入文件
+    output: {
+      file: 'dist/content-scripts/summary-box.js', // 输出到特定目录
       format: 'iife', // 输出格式
     },
     plugins: [

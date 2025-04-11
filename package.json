@@ -10,8 +10,8 @@
     "dev": "max dev",
     "format": "prettier --cache --write .",
     "postinstall": "max setup",
+    "plugin-dev": "max build && pnpm  build-scripts",
     "prepare": "husky",
-    "service": "node service/index.mjs",
     "setup": "max setup",
     "start": "npm run dev"
   },
@@ -30,7 +30,7 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-image": "^3.0.3",
-    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-json": "^6.1.0",
     "@types/chrome": "^0.0.308",
     "@types/react": "^18.0.33",
     "@types/react-dom": "^18.0.11",

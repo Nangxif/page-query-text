@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable @typescript-eslint/no-loop-func */
 /* eslint-disable @typescript-eslint/no-unused-expressions */
-import { defaultConfig } from '@/constants';
+import { defaultConfig, ResponseCode } from '@/constants/content-scripts';
 import { LoadingEnum, MatchCaseEnum } from '@/types';
 import {
   debounceFn,
@@ -10,6 +10,8 @@ import {
   splitText,
 } from '@/utils';
 import { FloatingSearchBoxElement } from './floating-search-box';
+import { summaryService } from './service';
+import { SummaryBoxElement } from './summary-box';
 
 // 是否打开搜索工具
 let isOpen = false;
@@ -18,6 +20,7 @@ let config = defaultConfig;
 const searchResultEmptyText = '无结果';
 let currentIndex = 1;
 let searchBox = null as FloatingSearchBoxElement | null;
+let summaryBox = null as SummaryBoxElement | null;
 let matchCase = MatchCaseEnum.DontMatch;
 // let matchWholeText = MatchWholeTextEnum.False;
 const textContentParentNodesMap = new Map<HTMLElement, string[]>();
@@ -103,7 +106,9 @@ function recursionElementChildNodes(elements: HTMLElement[]) {
         const texts =
           textContentParentNodesMap.get(element.parentNode as HTMLElement) ||
           [];
-        texts.push(text);
+        if (!texts?.includes(text)) {
+          texts.push(text);
+        }
         textContentParentNodesMap.set(element.parentNode as HTMLElement, texts);
       }
     } else if (
@@ -130,15 +135,8 @@ function insertSearchBox() {
   currentSelectedContent &&
     searchBox.setAttribute('data-selected-content', currentSelectedContent);
   document.documentElement.appendChild(searchBox);
-  searchBox.addEventListener('setting', () => {
-    chrome.runtime.sendMessage({ action: 'openSidePanel' }, (response) => {
-      if (response.status === 'success') {
-        console.log('侧边栏已打开');
-      } else {
-        console.error('打开侧边栏失败');
-      }
-    });
-  });
+  searchBox.addEventListener('setting', openSetting);
+  searchBox.addEventListener('summary', summaryPageTextContent);
   const queryTextFn = debounceFn(queryText, 500);
   searchBox.addEventListener('search', queryTextFn);
   searchBox.addEventListener('matchcasechange', matchCaseChange);
@@ -217,6 +215,60 @@ function matchCaseChange(e: any) {
   queryText(keyword);
 }
 
+async function summaryPageTextContent() {
+  insertSummaryBox();
+  updateSummaryBoxLoadingStatus(LoadingEnum.Loading);
+  // 开始总结
+  queryAllText();
+  let totalTextContent = '';
+  for (const parentNode of textContentParentNodesMap.keys()) {
+    const texts = textContentParentNodesMap.get(parentNode);
+    texts?.forEach((text) => {
+      totalTextContent += `${text}\n`;
+    });
+  }
+  if (!config?.model || !config?.apiKey) {
+    return;
+  }
+  const summaryParams = {
+    model: config.model,
+    apiKey: config.apiKey,
+    content: totalTextContent,
+  };
+  try {
+    const res = await summaryService(summaryParams);
+    if (res?.code === ResponseCode.SUCCESS) {
+      updateSummaryBoxTextContent(res?.data?.summary);
+    } else {
+      updateSummaryBoxTextContent('总结生成失败');
+    }
+  } catch {
+    updateSummaryBoxTextContent('总结生成失败');
+    chrome.runtime.sendMessage(
+      { action: 'openTab', data: { url: 'Login.html' } },
+      (response) => {
+        if (response.status === 'success') {
+          console.log('tab已打开');
+        } else {
+          console.error('打开tab失败');
+        }
+      },
+    );
+  } finally {
+    updateSummaryBoxLoadingStatus(LoadingEnum.Loaded);
+  }
+}
+
+function openSetting() {
+  chrome.runtime.sendMessage({ action: 'openSidePanel' }, (response) => {
+    if (response.status === 'success') {
+      console.log('侧边栏已打开');
+    } else {
+      console.error('打开侧边栏失败');
+    }
+  });
+}
+
 // 关闭搜索工具
 function closeSearchBox() {
   searchBox?.remove();
@@ -229,6 +281,25 @@ function closeSearchBox() {
   keyword = '';
   currentIndex = 1;
   isOpen = false;
+}
+
+function insertSummaryBox() {
+  if (!summaryBox) {
+    summaryBox = document.createElement('summary-box') as SummaryBoxElement;
+    summaryBox.addEventListener('close', () => {
+      summaryBox?.remove();
+      summaryBox = null;
+    });
+    document.documentElement.appendChild(summaryBox);
+  }
+}
+
+function updateSummaryBoxTextContent(content: string) {
+  if (summaryBox) summaryBox.textContent = content;
+}
+
+function updateSummaryBoxLoadingStatus(loadingStatus: LoadingEnum) {
+  if (summaryBox) summaryBox.setAttribute('data-loading', loadingStatus);
 }
 
 function queryText(e: any) {
@@ -446,6 +517,16 @@ window.addEventListener('load', () => {
   );
   // 将script插入至页面的html文档中，使其运行环境是网页html
   document.documentElement.appendChild(highlightBoxScript);
+
+  // 生成script
+  const summaryBoxScript = document.createElement('script');
+  // 使用chrome.runtime.getURL生成url
+  summaryBoxScript.src = chrome.runtime.getURL(
+    'content-scripts/summary-box.js', // 注意：这里的路径也是基于插件项目根目录的路径
+  );
+  // 将script插入至页面的html文档中，使其运行环境是网页html
+  document.documentElement.appendChild(summaryBoxScript);
+
   // 先获取本地存储的信息
   chrome.storage.sync.get(
     [
@@ -455,6 +536,8 @@ window.addEventListener('load', () => {
       'selectedColor',
       'selectedBgColor',
       'fixed',
+      'model',
+      'apiKey',
     ],
     (syncConfig) => {
       chrome.storage.local.get(['startX', 'startY'], (localConfig) => {

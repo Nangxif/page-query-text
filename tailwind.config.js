@@ -10,8 +10,8 @@ module.exports = {
   theme: {
     extend: {
       ant: {
-        components: antTheme.components,
         ...tokens,
+        components: antTheme.components,
       },
       colors: {
         ...tailwindTheme.colors,

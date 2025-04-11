@@ -17,7 +17,10 @@
       "matches": ["<all_urls>"],
       "resources": [
         "content-scripts/floating-search-box.js",
-        "content-scripts/highlight-box.js"
+        "content-scripts/highlight-box.js",
+        "content-scripts/summary-box.js",
+        "Login.html",
+        "UserInfo.html"
       ]
     }
   ],

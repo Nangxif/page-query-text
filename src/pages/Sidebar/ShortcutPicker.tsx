@@ -1,5 +1,4 @@
 import { Select } from 'antd';
-import styles from './index.less';
 
 type ShortcutPickerProps = {
   value?: string[];
@@ -38,8 +37,6 @@ const ShortcutPicker = (props: ShortcutPickerProps) => {
       onChange={handleChange}
       options={options}
       allowClear
-      popupClassName={styles['popup-container']}
-      className={styles['shortcut-picker']}
     />
   );
 };

@@ -1,10 +1,14 @@
-import { accountTypeTextOptions, ResponseCode } from '@/constants';
+import { accountTypeTextOptions, ResponseCode } from '@/constants/pages';
 import { GithubOutlined } from '@ant-design/icons';
 import { Button, Form, Input, message, Segmented } from 'antd';
 import { useRef, useState } from 'react';
 import { AccountType } from '../UserInfo/service';
 import styles from './index.less';
-import { getEmailCodeService, loginService } from './service';
+import {
+  emailLoginService,
+  getEmailCodeService,
+  passwordLoginService,
+} from './service';
 
 const { Item: FormItem, useForm } = Form;
 const Login = () => {
@@ -38,11 +42,36 @@ const Login = () => {
 
   const handleEmailSubmit = async (values: any) => {
     setIsLoading(true);
-
     try {
-      const res = await loginService(values.email, values.code);
+      const res = await emailLoginService(values.email, values.code);
       if (res.code === ResponseCode.SUCCESS) {
-        window.location.href = '/UserInfo.html';
+        message.success('登录成功');
+        chrome?.storage?.sync?.set({
+          PAGE_TOOLKIT_TOKEN: res?.data?.token,
+        });
+        setTimeout(() => {
+          window.location.href = '/UserInfo.html';
+        }, 1000);
+      } else {
+        message.error(res.message);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (values: any) => {
+    setIsLoading(true);
+    try {
+      const res = await passwordLoginService(values.email, values.password);
+      if (res.code === ResponseCode.SUCCESS) {
+        chrome?.storage?.sync?.set({
+          PAGE_TOOLKIT_TOKEN: res?.data?.token,
+        });
+        message.success('登录成功');
+        setTimeout(() => {
+          window.location.href = '/UserInfo.html';
+        }, 1000);
       } else {
         message.error(res.message);
       }
@@ -59,7 +88,6 @@ const Login = () => {
     <div className={styles['login-container']}>
       <div className={styles['login-card']}>
         <div className={styles['ip-logo']} />
-        <h3>欢迎登录Page Toolkit</h3>
 
         <Segmented
           options={accountTypeTextOptions}
@@ -131,7 +159,7 @@ const Login = () => {
 
         {accountType === AccountType.PASSWORD && (
           <Form
-            onFinish={handleEmailSubmit}
+            onFinish={handlePasswordSubmit}
             className={styles['login-form']}
             layout="vertical"
             form={form}

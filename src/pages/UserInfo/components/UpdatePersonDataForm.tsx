@@ -1,15 +1,21 @@
 import Avatar from '@/components/Avatar';
-import { accountTypeTextOptions, ResponseCode } from '@/constants';
+import { accountTypeTextOptions, ResponseCode } from '@/constants/pages';
 import { useRequest } from 'ahooks';
-import { Button, Form, Input, message, Select } from 'antd';
+import { Button, Form, Input, message, Modal, Select } from 'antd';
+import Cookies from 'js-cookie';
 import styles from '../index.less';
-import { getUserInfoService } from '../service';
+import {
+  getUserInfoService,
+  logoutService,
+  updateUserinfoService,
+} from '../service';
 
 type FormData = {
   username: string;
   email: string;
 };
 const { Item: FormItem, useForm } = Form;
+const { confirm } = Modal;
 const UpdatePersonData = () => {
   const [form] = useForm();
   const { data: userInfo } = useRequest(async () => {
@@ -24,31 +30,50 @@ const UpdatePersonData = () => {
 
   const { run: updateUserInfo, loading } = useRequest(
     async (values: FormData) => {
-      const rsp = await updateUserInfoService({
-        nickName: values.nickName,
-        email: values.email,
-        enableEmail: initialState?.userInfo?.enableEmail,
-        enablePhone: initialState?.userInfo?.enablePhone,
-        phone: userInfo?.phone,
-      });
-
-      if (rsp.code === ResponseCode.Success) {
-        message.success('操作成功');
-        const userRsp = await getUserInfoService();
-        if (rsp.code !== ResponseCode.Success) {
-          message.error(rsp.msg);
-        } else {
-          setInitialState({ userInfo: userRsp.data });
-        }
+      const rsp = await updateUserinfoService(values.username);
+      if (rsp.code === ResponseCode.SUCCESS) {
+        message.success('更新成功');
       } else {
-        message.error(rsp.msg);
+        message.error(rsp.message);
       }
     },
     { manual: true, throttleWait: 500 },
   );
   return (
     <div className={styles.card}>
-      <h1 className={styles.title}>个人资料</h1>
+      <h1 className={styles.title}>
+        个人资料
+        <Button
+          type="link"
+          size="small"
+          style={{
+            padding: 0,
+          }}
+          onClick={() => {
+            confirm({
+              title: '退出登录',
+              content: '确定退出登录吗？',
+              okText: '确定',
+              cancelText: '取消',
+              onOk: async () => {
+                const res = await logoutService();
+                if (res.code === ResponseCode.SUCCESS) {
+                  chrome?.storage?.sync?.remove('PAGE_TOOLKIT_TOKEN');
+                  Cookies.remove('PAGE_TOOLKIT_TOKEN');
+                  message.success('退出登录成功');
+                  setTimeout(() => {
+                    window.location.href = '/Login.html';
+                  }, 1000);
+                } else {
+                  message.error(res.message);
+                }
+              },
+            });
+          }}
+        >
+          退出登录
+        </Button>
+      </h1>
       {userInfo?.avatar && (
         <Avatar
           className={styles.avatar}

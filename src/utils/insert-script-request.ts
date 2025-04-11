@@ -1,4 +1,3 @@
-import { notification } from 'antd';
 import axios, { AxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 import { getChromeStorage } from '.';
@@ -23,15 +22,6 @@ instance.interceptors.response.use(
   },
   (error) => {
     if (error?.response?.status === 401) {
-      if (window.location.pathname !== '/Sidebar.html') {
-        window.location.href = '/Login.html';
-      }
-    }
-    if (window.location.pathname !== '/Sidebar.html') {
-      notification.error({
-        message: '请求失败',
-        description: error?.message,
-      });
     }
     return Promise.reject(error);
   },

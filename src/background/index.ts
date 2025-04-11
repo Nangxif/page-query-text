@@ -7,6 +7,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     sendResponse({ status: 'success' });
   }
+  if (request.action === 'openTab') {
+    chrome.tabs.create({ url: chrome.runtime.getURL(request.data.url) });
+    sendResponse({ status: 'success' });
+  }
   if (request.action === 'insertSearchBox') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs.length > 0) {

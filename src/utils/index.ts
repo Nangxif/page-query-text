@@ -1,4 +1,4 @@
-import { textStyleProperties } from '@/constants';
+import { textStyleProperties } from '@/constants/content-scripts';
 
 export const setStyle = (
   element: HTMLElement,
@@ -141,4 +141,18 @@ export const isExactMatch = (
   return caseSensitive
     ? text.includes(keyword)
     : text?.toLowerCase().includes(keyword?.toLowerCase());
+};
+
+export const getChromeStorage = <K extends string>(
+  keys: K[],
+): Promise<Record<K, any> | undefined> => {
+  return new Promise((resolve) => {
+    if (chrome?.storage?.sync) {
+      chrome?.storage?.sync?.get(keys, (data) => {
+        resolve(data as Record<K, any>);
+      });
+    } else {
+      resolve(undefined);
+    }
+  });
 };

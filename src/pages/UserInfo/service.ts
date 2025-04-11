@@ -39,6 +39,13 @@ export const updatePasswordService = async (password: string) => {
   });
 };
 
+export const updateUserinfoService = (username: string) => {
+  return request<API.BaseResponse<boolean>>('/api/user/info/update', {
+    method: 'POST',
+    data: { username },
+  });
+};
+
 export enum PaymentStatus {
   /** 未支付 */
   NO_PAY = 'NO_PAY',
@@ -46,6 +53,8 @@ export enum PaymentStatus {
   PAID_PENDING_REVIEW = 'PAID_PENDING_REVIEW',
   /** 已审核 */
   REVIEWED = 'REVIEWED',
+  /** 审核不通过 */
+  NO_PASS = 'NO_PASS',
 }
 
 export const getPayApplyInfoService = async () => {
@@ -56,4 +65,10 @@ export const getPayApplyInfoService = async () => {
       paymentStatus: PaymentStatus;
     }>
   >('/api/user/pay/apply/info');
+};
+
+export const logoutService = async () => {
+  return request<API.BaseResponse<boolean>>('/api/auth/logout', {
+    method: 'POST',
+  });
 };

@@ -1,6 +1,6 @@
 import { ReactComponent as PasswordHiddenIcon } from '@/assets/images/password-hidden-icon.svg';
 import { ReactComponent as PasswordShowIcon } from '@/assets/images/password-show-icon.svg';
-import { ResponseCode } from '@/constants';
+import { ResponseCode } from '@/constants/pages';
 import { useRequest } from 'ahooks';
 import { Button, Form, Input, message } from 'antd';
 import styles from '../index.less';
