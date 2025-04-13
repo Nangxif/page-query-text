@@ -19,21 +19,27 @@ const PaymentForm = () => {
   const [form] = useForm();
   const [submiting, setSubmiting] = useState(false);
 
-  const {
-    data = {
-      paymentWay: undefined,
-      serialNumber: undefined,
-      paymentStatus: undefined,
-    },
-  } = useRequest(async () => {
-    const res = await getPayApplyInfoService();
-    if (res.code === ResponseCode.SUCCESS) {
-      form.setFieldsValue(res.data);
-      return res.data;
+  const { data } = useRequest(async () => {
+    try {
+      const res = await getPayApplyInfoService();
+      if (res.code === ResponseCode.SUCCESS) {
+        form.setFieldsValue(res.data);
+        return res.data;
+      }
+    } catch {
+      return {
+        paymentWay: undefined,
+        serialNumber: undefined,
+        paymentStatus: undefined,
+      };
     }
   });
 
-  const { paymentStatus } = data;
+  const { paymentStatus } = data || {
+    paymentWay: undefined,
+    serialNumber: undefined,
+    paymentStatus: undefined,
+  };
 
   const handleSubmit = async (values: IPayApplyParams) => {
     setSubmiting(true);

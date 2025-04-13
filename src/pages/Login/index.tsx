@@ -2,6 +2,7 @@ import { accountTypeTextOptions, ResponseCode } from '@/constants/pages';
 import { GithubOutlined } from '@ant-design/icons';
 import { Button, Form, Input, message, Segmented } from 'antd';
 import { useRef, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { AccountType } from '../UserInfo/service';
 import styles from './index.less';
 import {
@@ -26,18 +27,21 @@ const Login = () => {
       return;
     }
     setIsGetCodeLoading(true);
-    const res = await getEmailCodeService(email);
-    if (res.code === ResponseCode.SUCCESS) {
-      message.success('验证码发送成功');
-      emailCodeTimer.current = setInterval(() => {
-        setRemainingTime((prev) => prev - 1);
-        if (remainingTime <= 0) {
-          clearInterval(emailCodeTimer.current as NodeJS.Timeout);
-          setRemainingTime(60);
-        }
-      }, 1000);
+    try {
+      const res = await getEmailCodeService(email);
+      if (res.code === ResponseCode.SUCCESS) {
+        message.success('验证码发送成功');
+        emailCodeTimer.current = setInterval(() => {
+          setRemainingTime((prev) => prev - 1);
+          if (remainingTime <= 0) {
+            clearInterval(emailCodeTimer.current as NodeJS.Timeout);
+            setRemainingTime(60);
+          }
+        }, 1000);
+      }
+    } finally {
+      setIsGetCodeLoading(false);
     }
-    setIsGetCodeLoading(false);
   };
 
   const handleEmailSubmit = async (values: any) => {
@@ -86,6 +90,9 @@ const Login = () => {
 
   return (
     <div className={styles['login-container']}>
+      <Helmet>
+        <title>Page Toolkit登录</title>
+      </Helmet>
       <div className={styles['login-card']}>
         <div className={styles['ip-logo']} />
 

@@ -53,6 +53,22 @@ class FloatingSearchBox extends HTMLElement {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
+        *::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      *::-webkit-scrollbar-thumb {
+        background: #e1e1e6;
+        border-radius: 3px;
+        box-shadow: inset 0 0 5px rgb(0 21 41 / 5%);
+      }
+
+      *::-webkit-scrollbar-track {
+        background: #f3f4fa;
+        border-radius: 3px;
+        box-shadow: inset 0 0 5px rgb(37 37 37 / 5%);
+      }
     `;
     this.shadowRoot?.appendChild(styleElement);
     this.startX = this.dataset.startx ? Number(this.dataset.startx) : 0;
@@ -60,21 +76,27 @@ class FloatingSearchBox extends HTMLElement {
     // 创建悬浮框
     this.floatingBox = document.createElement('div');
     setStyle(this.floatingBox, {
-      boxSizing: 'border-box',
-      display: 'flex',
-      alignItems: 'center',
       position: 'fixed',
       top: `${this.searchBoxMargin}px`,
       right: `${this.searchBoxMargin}px`,
       width: `${this.searchBoxWidth}px`,
-      height: `${this.searchBoxHeight}px`,
-      padding: '6px 4px',
       backgroundColor: 'rgb(32 32 32)',
       borderRadius: '4px',
       boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
       zIndex: '1000000',
       transform: `translate3d(${this.startX}px,${this.startY}px,0)`,
     });
+
+    const containerBox = document.createElement('div');
+    setStyle(containerBox, {
+      boxSizing: 'border-box',
+      display: 'flex',
+      alignItems: 'center',
+      width: `${this.searchBoxWidth}px`,
+      height: `${this.searchBoxHeight}px`,
+      padding: '6px 4px',
+    });
+    this.floatingBox.appendChild(containerBox);
 
     // 拖拽按钮
     this.dragButton = document.createElement('div');
@@ -145,7 +167,7 @@ class FloatingSearchBox extends HTMLElement {
       document.addEventListener('mouseup', handleMouseUp);
     });
 
-    this.floatingBox.appendChild(this.dragButton);
+    containerBox.appendChild(this.dragButton);
 
     // 设置按钮
     const settingButtonBox = document.createElement('div');
@@ -181,7 +203,7 @@ class FloatingSearchBox extends HTMLElement {
       backgroundSize: '100% 100%',
     });
     settingButtonBox.appendChild(settingButtonIcon);
-    this.floatingBox.appendChild(settingButtonBox);
+    containerBox.appendChild(settingButtonBox);
 
     // ai按钮
     const aiButtonBox = document.createElement('div');
@@ -219,7 +241,7 @@ class FloatingSearchBox extends HTMLElement {
       top: '-1px',
     });
     aiButtonBox.appendChild(aiButtonIcon);
-    this.floatingBox.appendChild(aiButtonBox);
+    containerBox.appendChild(aiButtonBox);
 
     // 创建输入框
     const inputBox = document.createElement('div');
@@ -348,7 +370,7 @@ class FloatingSearchBox extends HTMLElement {
     inputBox.appendChild(matchcaseButtonBox);
 
     // 将输入框添加到内容区域
-    this.floatingBox.appendChild(inputBox);
+    containerBox.appendChild(inputBox);
 
     // 搜索结果
     const searchResult = document.createElement('div');
@@ -359,7 +381,7 @@ class FloatingSearchBox extends HTMLElement {
       fontSize: '13px',
       marginRight: '12px',
     });
-    this.floatingBox.appendChild(searchResult);
+    containerBox.appendChild(searchResult);
 
     const prevButtonBox = document.createElement('div');
     setStyle(prevButtonBox, {
@@ -465,9 +487,62 @@ class FloatingSearchBox extends HTMLElement {
       this.dispatchEvent(new CustomEvent('close'));
     };
 
-    this.floatingBox.appendChild(prevButtonBox);
-    this.floatingBox.appendChild(nextButtonBox);
-    this.floatingBox.appendChild(closeButtonBox);
+    containerBox.appendChild(prevButtonBox);
+    containerBox.appendChild(nextButtonBox);
+    containerBox.appendChild(closeButtonBox);
+
+    const summaryBox = document.createElement('div');
+    setStyle(summaryBox, {
+      boxSizing: 'border-box',
+      width: '100%',
+    });
+    this.floatingBox.appendChild(summaryBox);
+    // 内容区域
+    const summaryContentBox = document.createElement('div');
+    setStyle(summaryContentBox, {
+      position: 'relative',
+      boxSizing: 'border-box',
+      margin: '0px auto 6px',
+      padding: '8px',
+      width: 'calc(100% - 12px)',
+      height: '264px',
+      borderRadius: '4px',
+      overflowY: 'auto',
+      background: 'rgb(49 49 49)',
+      fontSize: '13px',
+      color: 'white',
+      lineHeight: '20px',
+      whiteSpace: 'pre-wrap',
+      wordBreak: 'break-all',
+    });
+
+    summaryBox.appendChild(summaryContentBox);
+
+    const titleBox = document.createElement('div');
+    setStyle(titleBox, {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      fontSize: '13px',
+      color: 'white',
+      margin: '4px auto',
+      fontStyle: 'italic',
+    });
+    titleBox.textContent = '页面内容总结';
+    summaryContentBox.appendChild(titleBox);
+
+    const summaryCloseBox = document.createElement('div');
+    setStyle(summaryCloseBox, {
+      position: 'absolute',
+      right: '6px',
+      bottom: '0',
+      fontSize: '13px',
+      color: 'white',
+      margin: '4px auto',
+      fontStyle: 'italic',
+    });
+    summaryCloseBox.textContent = '收起';
+    summaryContentBox.appendChild(summaryCloseBox);
 
     // 将悬浮框添加到文档中
     this.shadowRoot?.appendChild(this.floatingBox);

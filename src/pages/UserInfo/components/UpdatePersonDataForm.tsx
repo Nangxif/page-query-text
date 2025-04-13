@@ -20,12 +20,14 @@ const UpdatePersonData = () => {
   const [form] = useForm();
   const { data: userInfo } = useRequest(async () => {
     const res = await getUserInfoService();
-    form.setFieldsValue({
-      username: res.data.username || res.data.email,
-      email: res.data.email,
-      accountType: res.data.accountType,
-    });
-    return res.data;
+    if (res?.code === ResponseCode.SUCCESS) {
+      form.setFieldsValue({
+        username: res.data.username || res.data.email,
+        email: res.data.email,
+        accountType: res.data.accountType,
+      });
+      return res.data;
+    }
   });
 
   const { run: updateUserInfo, loading } = useRequest(
@@ -103,12 +105,13 @@ const UpdatePersonData = () => {
           />
         </FormItem>
         <FormItem label="邮箱" name="email">
-          <Input className={styles.input} disabled />
+          <Input className={styles.input} placeholder="邮箱" disabled />
         </FormItem>
         <FormItem label="登录方式" name="accountType">
           <Select
             className={styles.input}
             options={accountTypeTextOptions}
+            placeholder="登录方式"
             disabled
           />
         </FormItem>

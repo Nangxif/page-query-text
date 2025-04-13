@@ -1,6 +1,7 @@
 import { ConfigProvider } from 'antd';
 import classNames from 'classnames';
 import { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import PaymentForm from './components/PaymentForm';
 import UpdatePasswordForm from './components/UpdatePasswordForm';
 import UpdatePersonDataForm from './components/UpdatePersonDataForm';
@@ -25,6 +26,9 @@ export default function UserCenter() {
 
   return (
     <div className={styles['content-wrapper']}>
+      <Helmet>
+        <title>Page Toolkit个人中心</title>
+      </Helmet>
       <div className={styles.tabs}>
         {Tabs.map((item) => {
           return (
