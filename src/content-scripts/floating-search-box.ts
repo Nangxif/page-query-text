@@ -7,7 +7,9 @@ import DragIcon from '../assets/images/drag-icon.png';
 import LoadingIcon from '../assets/images/loading-icon.png';
 import MatchCaseIcon from '../assets/images/match-case-icon.png';
 import NextIcon from '../assets/images/next-icon.png';
+import NextPageIcon from '../assets/images/next-page-icon.png';
 import PrevIcon from '../assets/images/prev-icon.png';
+import PrevPageIcon from '../assets/images/prev-page-icon.png';
 import SettingsIcon from '../assets/images/setting-icon.png';
 
 // 定义一个悬浮搜索框的Web Component
@@ -26,7 +28,15 @@ class FloatingSearchBox extends HTMLElement {
   private searchBoxWidth = 420;
   private searchBoxHeight = 38;
   private searchBoxMargin = 20;
-
+  private summaryContentBox: HTMLElement | null = null;
+  private summaryContainerBox: HTMLElement | null = null;
+  private summaryLoading = LoadingEnum.Loaded;
+  private summaryLoadingIcon: HTMLElement | null = null;
+  private openSummary = false;
+  private summaryTextContent = '';
+  private pageText: HTMLElement | null = null;
+  private summaryPage = 1;
+  private summaryTotalPage = 1;
   static get observedAttributes() {
     return [
       'data-fixed',
@@ -34,6 +44,11 @@ class FloatingSearchBox extends HTMLElement {
       'data-starty',
       'data-loading',
       'data-selected-content',
+      'data-summary-loading',
+      'data-open-summary',
+      'data-summary-text-content',
+      'data-summary-page',
+      'data-summary-total-page',
     ];
   }
 
@@ -59,13 +74,13 @@ class FloatingSearchBox extends HTMLElement {
       }
 
       *::-webkit-scrollbar-thumb {
-        background: #e1e1e6;
+        background: rgba(255, 255, 255, 0.3);
         border-radius: 3px;
         box-shadow: inset 0 0 5px rgb(0 21 41 / 5%);
       }
 
       *::-webkit-scrollbar-track {
-        background: #f3f4fa;
+        background: rgba(49, 49, 49, 0.8);
         border-radius: 3px;
         box-shadow: inset 0 0 5px rgb(37 37 37 / 5%);
       }
@@ -498,8 +513,8 @@ class FloatingSearchBox extends HTMLElement {
     });
     this.floatingBox.appendChild(summaryBox);
     // 内容区域
-    const summaryContentBox = document.createElement('div');
-    setStyle(summaryContentBox, {
+    this.summaryContentBox = document.createElement('div');
+    setStyle(this.summaryContentBox, {
       position: 'relative',
       boxSizing: 'border-box',
       margin: '0px auto 6px',
@@ -507,16 +522,10 @@ class FloatingSearchBox extends HTMLElement {
       width: 'calc(100% - 12px)',
       height: '264px',
       borderRadius: '4px',
-      overflowY: 'auto',
       background: 'rgb(49 49 49)',
-      fontSize: '13px',
-      color: 'white',
-      lineHeight: '20px',
-      whiteSpace: 'pre-wrap',
-      wordBreak: 'break-all',
     });
 
-    summaryBox.appendChild(summaryContentBox);
+    summaryBox.appendChild(this.summaryContentBox);
 
     const titleBox = document.createElement('div');
     setStyle(titleBox, {
@@ -527,9 +536,92 @@ class FloatingSearchBox extends HTMLElement {
       color: 'white',
       margin: '4px auto',
       fontStyle: 'italic',
+      zIndex: '1',
     });
     titleBox.textContent = '页面内容总结';
-    summaryContentBox.appendChild(titleBox);
+    this.summaryContentBox.appendChild(titleBox);
+
+    this.summaryLoadingIcon = document.createElement('div');
+    setStyle(this.summaryLoadingIcon, {
+      display: 'none',
+      margin: 'auto',
+      position: 'absolute',
+      left: '0px',
+      right: '0px',
+      top: '0px',
+      bottom: '0px',
+      width: '24px',
+      height: '24px',
+      backgroundImage: `url(${LoadingIcon})`,
+      backgroundSize: '100% 100%',
+      animation: 'spin 1s linear infinite',
+    });
+    this.summaryContentBox?.appendChild(this.summaryLoadingIcon);
+
+    this.summaryContainerBox = document.createElement('div');
+    setStyle(this.summaryContainerBox, {
+      position: 'absolute',
+      left: '0',
+      top: '28px',
+      width: '100%',
+      height: 'calc(100% - 56px)',
+      fontSize: '13px',
+      color: 'white',
+      lineHeight: '20px',
+      whiteSpace: 'pre-wrap',
+      wordBreak: 'break-all',
+      overflowY: 'auto',
+    });
+    this.summaryContentBox.appendChild(this.summaryContainerBox);
+    // 页码
+    const pageBox = document.createElement('div');
+    setStyle(pageBox, {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'absolute',
+      left: '0',
+      bottom: '0',
+      fontSize: '13px',
+      color: 'white',
+      margin: '4px auto',
+      zIndex: '1',
+    });
+    const prevPageBox = document.createElement('div');
+    setStyle(prevPageBox, {
+      width: '20px',
+      height: '20px',
+      backgroundImage: `url(${PrevPageIcon})`,
+      backgroundSize: '100% 100%',
+      cursor: 'pointer',
+    });
+    prevPageBox.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('summaryprev'));
+    });
+    this.pageText = document.createElement('div');
+    setStyle(this.pageText, {
+      fontSize: '13px',
+      color: 'white',
+      margin: '0 4px',
+    });
+    this.pageText.textContent = `0/0`;
+
+    const nextPageBox = document.createElement('div');
+    setStyle(nextPageBox, {
+      width: '20px',
+      height: '20px',
+      backgroundImage: `url(${NextPageIcon})`,
+      backgroundSize: '100% 100%',
+      cursor: 'pointer',
+    });
+    nextPageBox.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('summarynext'));
+    });
+    pageBox.appendChild(prevPageBox);
+    pageBox.appendChild(this.pageText);
+    pageBox.appendChild(nextPageBox);
+
+    this.summaryContentBox.appendChild(pageBox);
 
     const summaryCloseBox = document.createElement('div');
     setStyle(summaryCloseBox, {
@@ -540,9 +632,17 @@ class FloatingSearchBox extends HTMLElement {
       color: 'white',
       margin: '4px auto',
       fontStyle: 'italic',
+      cursor: 'pointer',
+      zIndex: '1',
     });
     summaryCloseBox.textContent = '收起';
-    summaryContentBox.appendChild(summaryCloseBox);
+    summaryCloseBox.addEventListener('click', () => {
+      this.openSummary = false;
+      setStyle(this.summaryContentBox!, {
+        display: 'none',
+      });
+    });
+    this.summaryContentBox.appendChild(summaryCloseBox);
 
     // 将悬浮框添加到文档中
     this.shadowRoot?.appendChild(this.floatingBox);
@@ -574,6 +674,53 @@ class FloatingSearchBox extends HTMLElement {
           });
           clearTimeout(timer);
         }, 100);
+      }
+    }
+
+    if (name === 'data-summary-loading') {
+      this.summaryLoading = newValue as LoadingEnum;
+      if (this.summaryLoading === LoadingEnum.Loading) {
+        setStyle(this.summaryLoadingIcon!, {
+          display: 'block',
+        });
+      } else if (this.summaryLoading === LoadingEnum.Loaded) {
+        setStyle(this.summaryLoadingIcon!, {
+          display: 'none',
+        });
+      }
+    }
+
+    if (name === 'data-open-summary') {
+      this.openSummary = newValue === 'true';
+      if (this.openSummary) {
+        setStyle(this.summaryContentBox!, {
+          display: 'block',
+        });
+      } else {
+        setStyle(this.summaryContentBox!, {
+          display: 'none',
+        });
+      }
+    }
+
+    if (name === 'data-summary-text-content') {
+      this.summaryTextContent = newValue;
+      if (this.summaryContainerBox) {
+        this.summaryContainerBox.textContent = this.summaryTextContent;
+      }
+    }
+
+    if (name === 'data-summary-page') {
+      this.summaryPage = parseInt(newValue);
+      if (this.pageText) {
+        this.pageText.textContent = `${this.summaryPage}/${this.summaryTotalPage}`;
+      }
+    }
+
+    if (name === 'data-summary-total-page') {
+      this.summaryTotalPage = parseInt(newValue);
+      if (this.pageText) {
+        this.pageText.textContent = `${this.summaryPage}/${this.summaryTotalPage}`;
       }
     }
   }

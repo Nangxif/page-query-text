@@ -11,6 +11,9 @@ dependencies:
   '@ant-design/pro-components':
     specifier: ^2.4.4
     version: registry.npmjs.org/@ant-design/pro-components@2.8.7(antd@5.24.5)(rc-field-form@2.7.0)(react-dom@18.3.1)(react@18.3.1)
+  '@rollup/plugin-node-resolve':
+    specifier: ^16.0.1
+    version: registry.npmjs.org/@rollup/plugin-node-resolve@16.0.1(rollup@4.38.0)
   '@types/js-cookie':
     specifier: ^3.0.6
     version: registry.npmjs.org/@types/js-cookie@3.0.6
@@ -29,12 +32,18 @@ dependencies:
   classnames:
     specifier: ^2.5.1
     version: registry.npmjs.org/classnames@2.5.1
+  dexie:
+    specifier: ^4.0.11
+    version: registry.npmjs.org/dexie@4.0.11
   js-cookie:
     specifier: ^3.0.5
     version: registry.npmjs.org/js-cookie@3.0.5
   openai:
     specifier: ^4.91.1
     version: registry.npmjs.org/openai@4.91.1(zod@3.24.2)
+  react-helmet-async:
+    specifier: ^2.0.5
+    version: registry.npmjs.org/react-helmet-async@2.0.5(react@18.3.1)
 
 devDependencies:
   '@rollup/plugin-commonjs':
@@ -46,9 +55,6 @@ devDependencies:
   '@rollup/plugin-json':
     specifier: ^6.1.0
     version: registry.npmjs.org/@rollup/plugin-json@6.1.0(rollup@4.38.0)
-  '@rollup/plugin-node-resolve':
-    specifier: ^16.0.1
-    version: registry.npmjs.org/@rollup/plugin-node-resolve@16.0.1(rollup@4.38.0)
   '@types/chrome':
     specifier: ^0.0.308
     version: registry.npmjs.org/@types/chrome@0.0.308
@@ -3047,7 +3053,7 @@ packages:
       is-module: registry.npmjs.org/is-module@1.0.0
       resolve: registry.npmjs.org/resolve@1.22.10
       rollup: registry.npmjs.org/rollup@4.38.0
-    dev: true
+    dev: false
 
   registry.npmjs.org/@rollup/pluginutils@4.2.1:
     resolution: {integrity: sha512-iKnFXr7NkdZAIHiIWE+BX5ULi/ucVFYWD6TbAV+rZctiRTY2PL6tsIKhoIOaoskiWAkgu+VsbXgUVDNLHf+InQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@rollup/pluginutils/-/pluginutils-4.2.1.tgz}
@@ -3075,7 +3081,6 @@ packages:
       estree-walker: registry.npmjs.org/estree-walker@2.0.2
       picomatch: registry.npmjs.org/picomatch@4.0.2
       rollup: registry.npmjs.org/rollup@4.38.0
-    dev: true
 
   registry.npmjs.org/@rollup/rollup-android-arm-eabi@4.38.0:
     resolution: {integrity: sha512-ldomqc4/jDZu/xpYU+aRxo3V4mGCV9HeTgUBANI3oIQMOL+SsxB+S2lxMpkFp5UamSS3XuTMQVbsS24R4J4Qjg==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@rollup/rollup-android-arm-eabi/-/rollup-android-arm-eabi-4.38.0.tgz}
@@ -3807,7 +3812,7 @@ packages:
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@types/resolve/-/resolve-1.20.2.tgz}
     name: '@types/resolve'
     version: 1.20.2
-    dev: true
+    dev: false
 
   registry.npmjs.org/@types/resolve@1.20.6:
     resolution: {integrity: sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@types/resolve/-/resolve-1.20.6.tgz}
@@ -6792,6 +6797,7 @@ packages:
     name: deepmerge
     version: 4.3.1
     engines: {node: '>=0.10.0'}
+    dev: false
 
   registry.npmjs.org/default-browser-id@3.0.0:
     resolution: {integrity: sha512-OZ1y3y0SqSICtE8DE4S8YOE9UZOJ8wO16fKWVP5J1Qz42kV9jcnMVFrEE/noXb/ss3Q4pZIH79kxofzyNNtUNA==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/default-browser-id/-/default-browser-id-3.0.0.tgz}
@@ -6912,6 +6918,12 @@ packages:
     resolution: {integrity: sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/detect-node/-/detect-node-2.1.0.tgz}
     name: detect-node
     version: 2.1.0
+    dev: false
+
+  registry.npmjs.org/dexie@4.0.11:
+    resolution: {integrity: sha512-SOKO002EqlvBYYKQSew3iymBoN2EQ4BDw/3yprjh7kAfFzjBYkaMNa/pZvcA7HSWlcKSQb9XhPe3wKyQ0x4A8A==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/dexie/-/dexie-4.0.11.tgz}
+    name: dexie
+    version: 4.0.11
     dev: false
 
   registry.npmjs.org/didyoumean@1.2.2:
@@ -7805,7 +7817,6 @@ packages:
     resolution: {integrity: sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/estree-walker/-/estree-walker-2.0.2.tgz}
     name: estree-walker
     version: 2.0.2
-    dev: true
 
   registry.npmjs.org/esutils@2.0.3:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/esutils/-/esutils-2.0.3.tgz}
@@ -9309,7 +9320,7 @@ packages:
     resolution: {integrity: sha512-51ypPSPCoTEIN9dy5Oy+h4pShgJmPCygKfyRCISBI+JoWT/2oJvK8QPxmwv7b/p239jXrm9M1mlQbyKJ5A152g==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/is-module/-/is-module-1.0.0.tgz}
     name: is-module
     version: 1.0.0
-    dev: true
+    dev: false
 
   registry.npmjs.org/is-number-object@1.1.1:
     resolution: {integrity: sha512-lZhclumE1G6VYD8VHe35wFaIif+CTy5SJIi5+3y4psDgWu4wPDoBhF8NxUOinEc7pHgiTsT6MaBb92rKhhD+Xw==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/is-number-object/-/is-number-object-1.1.1.tgz}
@@ -11233,7 +11244,6 @@ packages:
     name: picomatch
     version: 4.0.2
     engines: {node: '>=12'}
-    dev: true
 
   registry.npmjs.org/pidtree@0.6.0:
     resolution: {integrity: sha512-eG2dWTVw5bzqGRztnHExczNxt5VGsE6OwTeCG3fdUf9KBsZzO3R5OIIIzWR+iZA0NtZ+RDVdaoE2dK1cn6jH4g==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/pidtree/-/pidtree-0.6.0.tgz}
@@ -13481,6 +13491,20 @@ packages:
       prop-types: registry.npmjs.org/prop-types@15.8.1
       react: registry.npmjs.org/react@18.3.1
       react-dom: registry.npmjs.org/react-dom@18.3.1(react@18.3.1)
+      react-fast-compare: registry.npmjs.org/react-fast-compare@3.2.2
+      shallowequal: registry.npmjs.org/shallowequal@1.1.0
+    dev: false
+
+  registry.npmjs.org/react-helmet-async@2.0.5(react@18.3.1):
+    resolution: {integrity: sha512-rYUYHeus+i27MvFE+Jaa4WsyBKGkL6qVgbJvSBoX8mbsWoABJXdEO0bZyi0F6i+4f0NuIb8AvqPMj3iXFHkMwg==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/react-helmet-async/-/react-helmet-async-2.0.5.tgz}
+    id: registry.npmjs.org/react-helmet-async/2.0.5
+    name: react-helmet-async
+    version: 2.0.5
+    peerDependencies:
+      react: ^16.6.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      invariant: registry.npmjs.org/invariant@2.2.4
+      react: registry.npmjs.org/react@18.3.1
       react-fast-compare: registry.npmjs.org/react-fast-compare@3.2.2
       shallowequal: registry.npmjs.org/shallowequal@1.1.0
     dev: false

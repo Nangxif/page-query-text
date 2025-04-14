@@ -2,6 +2,8 @@
 /* eslint-disable @typescript-eslint/no-loop-func */
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 import { defaultConfig, ResponseCode } from '@/constants/content-scripts';
+import { pageQueryTextDataBase } from '@/db';
+import { SummaryResult } from '@/db/model';
 import { LoadingEnum, MatchCaseEnum } from '@/types';
 import {
   debounceFn,
@@ -11,7 +13,6 @@ import {
 } from '@/utils';
 import { FloatingSearchBoxElement } from './floating-search-box';
 import { summaryService } from './service';
-import { SummaryBoxElement } from './summary-box';
 
 // 是否打开搜索工具
 let isOpen = false;
@@ -20,7 +21,6 @@ let config = defaultConfig;
 const searchResultEmptyText = '无结果';
 let currentIndex = 1;
 let searchBox = null as FloatingSearchBoxElement | null;
-let summaryBox = null as SummaryBoxElement | null;
 let matchCase = MatchCaseEnum.DontMatch;
 // let matchWholeText = MatchWholeTextEnum.False;
 const textContentParentNodesMap = new Map<HTMLElement, string[]>();
@@ -30,6 +30,9 @@ let needRenderHighlightParentNodes: {
 }[] = [];
 let highlightNodes: HTMLElement[] = [];
 let keyword = '';
+let summaryPage = 0;
+let summaryTotalPage = 0;
+let summaryResultList: SummaryResult[] = [];
 
 function queryAllText() {
   textContentParentNodesMap.clear();
@@ -144,6 +147,30 @@ function insertSearchBox() {
   searchBox.addEventListener('searchnext', searchNext);
   searchBox.addEventListener('move', moveSearchBox);
   searchBox.addEventListener('close', closeSearchBox);
+  searchBox.addEventListener('summaryprev', summaryPrev);
+  searchBox.addEventListener('summarynext', summaryNext);
+}
+
+function summaryPrev() {
+  if (summaryPage > 1) {
+    summaryPage--;
+    searchBox?.setAttribute('data-summary-page', summaryPage.toString());
+    searchBox?.setAttribute(
+      'data-summary-text-content',
+      summaryResultList[summaryPage - 1].summary,
+    );
+  }
+}
+
+function summaryNext() {
+  if (summaryPage < summaryTotalPage) {
+    summaryPage++;
+    searchBox?.setAttribute('data-summary-page', summaryPage.toString());
+    searchBox?.setAttribute(
+      'data-summary-text-content',
+      summaryResultList[summaryPage - 1].summary,
+    );
+  }
 }
 
 // 更新搜索内容
@@ -216,8 +243,28 @@ function matchCaseChange(e: any) {
 }
 
 async function summaryPageTextContent() {
-  insertSummaryBox();
-  updateSummaryBoxLoadingStatus(LoadingEnum.Loading);
+  searchBox?.setAttribute('data-open-summary', 'true');
+  searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loading);
+  searchBox?.setAttribute('data-summary-text-content', '');
+  // 先从db获取summaryResultList
+  summaryResultList = await pageQueryTextDataBase.getSummaryResultList(
+    window.location.href,
+  );
+  if (summaryResultList.length > 0) {
+    searchBox?.setAttribute(
+      'data-summary-text-content',
+      summaryResultList[0].summary,
+    );
+    summaryPage = 1;
+    summaryTotalPage = summaryResultList.length;
+    searchBox?.setAttribute('data-summary-page', summaryPage.toString());
+    searchBox?.setAttribute(
+      'data-summary-total-page',
+      summaryTotalPage.toString(),
+    );
+    searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
+    return;
+  }
   // 开始总结
   queryAllText();
   let totalTextContent = '';
@@ -238,12 +285,20 @@ async function summaryPageTextContent() {
   try {
     const res = await summaryService(summaryParams);
     if (res?.code === ResponseCode.SUCCESS) {
-      updateSummaryBoxTextContent(res?.data?.summary);
+      searchBox?.setAttribute('data-summary-text-content', res?.data?.summary);
+      searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
+      pageQueryTextDataBase.addSummaryResult({
+        id: `${window.location.href}-${Date.now()}`,
+        pageUrl: window.location.href,
+        summary: res?.data?.summary,
+        createdAt: Date.now(),
+        model: config.model,
+      });
     } else {
-      updateSummaryBoxTextContent('总结生成失败');
+      searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
     }
   } catch {
-    updateSummaryBoxTextContent('总结生成失败');
+    searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
     chrome.runtime.sendMessage(
       { action: 'openTab', data: { url: 'Login.html' } },
       (response) => {
@@ -255,7 +310,7 @@ async function summaryPageTextContent() {
       },
     );
   } finally {
-    updateSummaryBoxLoadingStatus(LoadingEnum.Loaded);
+    searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
   }
 }
 
@@ -281,25 +336,6 @@ function closeSearchBox() {
   keyword = '';
   currentIndex = 1;
   isOpen = false;
-}
-
-function insertSummaryBox() {
-  if (!summaryBox) {
-    summaryBox = document.createElement('summary-box') as SummaryBoxElement;
-    summaryBox.addEventListener('close', () => {
-      summaryBox?.remove();
-      summaryBox = null;
-    });
-    document.documentElement.appendChild(summaryBox);
-  }
-}
-
-function updateSummaryBoxTextContent(content: string) {
-  if (summaryBox) summaryBox.textContent = content;
-}
-
-function updateSummaryBoxLoadingStatus(loadingStatus: LoadingEnum) {
-  if (summaryBox) summaryBox.setAttribute('data-loading', loadingStatus);
 }
 
 function queryText(e: any) {
@@ -437,6 +473,7 @@ function getTextNodes(node: Node) {
   }
   return textNodes;
 }
+
 function renderHighlightKeyword(parentNode: Node, keyword: string) {
   const textNodes = getTextNodes(parentNode);
   // 处理每个文本节点
@@ -487,6 +524,7 @@ function renderHighlightKeyword(parentNode: Node, keyword: string) {
     }
   });
 }
+
 // 渲染选中的样式
 function updateKeywordStyle(
   highlightNode: HTMLElement,
@@ -517,15 +555,6 @@ window.addEventListener('load', () => {
   );
   // 将script插入至页面的html文档中，使其运行环境是网页html
   document.documentElement.appendChild(highlightBoxScript);
-
-  // 生成script
-  const summaryBoxScript = document.createElement('script');
-  // 使用chrome.runtime.getURL生成url
-  summaryBoxScript.src = chrome.runtime.getURL(
-    'content-scripts/summary-box.js', // 注意：这里的路径也是基于插件项目根目录的路径
-  );
-  // 将script插入至页面的html文档中，使其运行环境是网页html
-  document.documentElement.appendChild(summaryBoxScript);
 
   // 先获取本地存储的信息
   chrome.storage.sync.get(
