@@ -140,6 +140,8 @@ function insertSearchBox() {
   document.documentElement.appendChild(searchBox);
   searchBox.addEventListener('setting', openSetting);
   searchBox.addEventListener('summary', summaryPageTextContent);
+  searchBox.addEventListener('refreshsummary', refreshSummaryPageTextContent);
+  searchBox.addEventListener('moresummary', openSummaryResultListSidebar);
   const queryTextFn = debounceFn(queryText, 500);
   searchBox.addEventListener('search', queryTextFn);
   searchBox.addEventListener('matchcasechange', matchCaseChange);
@@ -294,6 +296,14 @@ async function summaryPageTextContent() {
         createdAt: Date.now(),
         model: config.model,
       });
+
+      summaryPage = 1;
+      summaryTotalPage = 1;
+      searchBox?.setAttribute('data-summary-page', summaryPage.toString());
+      searchBox?.setAttribute(
+        'data-summary-total-page',
+        summaryTotalPage.toString(),
+      );
     } else {
       searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
     }
@@ -314,8 +324,95 @@ async function summaryPageTextContent() {
   }
 }
 
+async function refreshSummaryPageTextContent() {
+  searchBox?.setAttribute('data-open-summary', 'true');
+  searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loading);
+  searchBox?.setAttribute('data-summary-text-content', '');
+  // 开始总结
+  queryAllText();
+  let totalTextContent = '';
+  for (const parentNode of textContentParentNodesMap.keys()) {
+    const texts = textContentParentNodesMap.get(parentNode);
+    texts?.forEach((text) => {
+      totalTextContent += `${text}\n`;
+    });
+  }
+  if (!config?.model || !config?.apiKey) {
+    return;
+  }
+  const summaryParams = {
+    model: config.model,
+    apiKey: config.apiKey,
+    content: totalTextContent,
+  };
+  try {
+    const res = await summaryService(summaryParams);
+    if (res?.code === ResponseCode.SUCCESS) {
+      searchBox?.setAttribute('data-summary-text-content', res?.data?.summary);
+      searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
+      pageQueryTextDataBase.addSummaryResult({
+        id: `${window.location.href}-${Date.now()}`,
+        pageUrl: window.location.href,
+        summary: res?.data?.summary,
+        createdAt: Date.now(),
+        model: config.model,
+      });
+
+      summaryPage = 1;
+      summaryTotalPage += 1;
+      searchBox?.setAttribute('data-summary-page', summaryPage.toString());
+      searchBox?.setAttribute(
+        'data-summary-total-page',
+        summaryTotalPage.toString(),
+      );
+      summaryResultList.unshift({
+        id: `${window.location.href}-${Date.now()}`,
+        pageUrl: window.location.href,
+        summary: res?.data?.summary,
+        createdAt: Date.now(),
+        model: config.model,
+      });
+    } else {
+      searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
+    }
+  } catch {
+    searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
+    chrome.runtime.sendMessage(
+      { action: 'openTab', data: { url: 'Login.html' } },
+      (response) => {
+        if (response.status === 'success') {
+          console.log('tab已打开');
+        } else {
+          console.error('打开tab失败');
+        }
+      },
+    );
+  } finally {
+    searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
+  }
+}
+
+function openSummaryResultListSidebar() {
+  chrome.runtime.sendMessage(
+    {
+      action: 'openSummaryResultListSidePanel',
+    },
+    (response) => {
+      if (response.status === 'success') {
+        console.log('侧边栏已打开');
+        chrome.runtime.sendMessage({
+          action: 'sendDataToSummaryResultListSidePanel',
+          data: { summaryResultList },
+        });
+      } else {
+        console.error('打开侧边栏失败');
+      }
+    },
+  );
+}
+
 function openSetting() {
-  chrome.runtime.sendMessage({ action: 'openSidePanel' }, (response) => {
+  chrome.runtime.sendMessage({ action: 'openSettingSidePanel' }, (response) => {
     if (response.status === 'success') {
       console.log('侧边栏已打开');
     } else {

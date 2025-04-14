@@ -6,10 +6,12 @@ import CloseIcon from '../assets/images/close-icon.png';
 import DragIcon from '../assets/images/drag-icon.png';
 import LoadingIcon from '../assets/images/loading-icon.png';
 import MatchCaseIcon from '../assets/images/match-case-icon.png';
+import MoreIcon from '../assets/images/more-icon.png';
 import NextIcon from '../assets/images/next-icon.png';
 import NextPageIcon from '../assets/images/next-page-icon.png';
 import PrevIcon from '../assets/images/prev-icon.png';
 import PrevPageIcon from '../assets/images/prev-page-icon.png';
+import RefreshIcon from '../assets/images/refresh-icon.png';
 import SettingsIcon from '../assets/images/setting-icon.png';
 
 // 定义一个悬浮搜索框的Web Component
@@ -515,6 +517,7 @@ class FloatingSearchBox extends HTMLElement {
     // 内容区域
     this.summaryContentBox = document.createElement('div');
     setStyle(this.summaryContentBox, {
+      display: 'none',
       position: 'relative',
       boxSizing: 'border-box',
       margin: '0px auto 6px',
@@ -540,6 +543,54 @@ class FloatingSearchBox extends HTMLElement {
     });
     titleBox.textContent = '页面内容总结';
     this.summaryContentBox.appendChild(titleBox);
+
+    const refreshSummaryBox = document.createElement('div');
+    setStyle(refreshSummaryBox, {
+      position: 'absolute',
+      right: '25px',
+      top: '3px',
+      width: '16px',
+      height: '16px',
+      userSelect: 'none',
+      backgroundImage: `url(${RefreshIcon})`,
+      backgroundSize: '100% 100%',
+      cursor: 'pointer',
+      zIndex: '1',
+      transition: 'all 0.3s ease-out',
+    });
+    refreshSummaryBox.addEventListener('mouseover', () => {
+      setStyle(refreshSummaryBox, {
+        transform: 'rotate(360deg)',
+      });
+    });
+    refreshSummaryBox.addEventListener('mouseleave', () => {
+      setStyle(refreshSummaryBox, {
+        transform: 'rotate(0deg)',
+      });
+    });
+    refreshSummaryBox.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('refreshsummary'));
+    });
+    this.summaryContentBox.appendChild(refreshSummaryBox);
+
+    const moreSummaryBox = document.createElement('div');
+    setStyle(moreSummaryBox, {
+      position: 'absolute',
+      right: '3px',
+      top: '3px',
+      width: '16px',
+      height: '16px',
+      userSelect: 'none',
+      backgroundImage: `url(${MoreIcon})`,
+      backgroundSize: '100% 100%',
+      cursor: 'pointer',
+      zIndex: '1',
+      transition: 'all 0.3s ease-out',
+    });
+    moreSummaryBox.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('moresummary'));
+    });
+    this.summaryContentBox.appendChild(moreSummaryBox);
 
     this.summaryLoadingIcon = document.createElement('div');
     setStyle(this.summaryLoadingIcon, {

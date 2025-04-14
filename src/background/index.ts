@@ -1,16 +1,31 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'openSidePanel') {
+  if (request.action === 'openSettingSidePanel') {
     chrome.sidePanel.open({
       tabId: sender?.tab?.id!,
       windowId: sender?.tab?.windowId!,
     });
     sendResponse({ status: 'success' });
   }
+
+  if (request.action === 'openSummaryResultListSidePanel') {
+    chrome.sidePanel.setOptions({
+      enabled: true,
+      tabId: sender?.tab?.id!,
+      path: 'SummaryResultList.html', // 你的侧边栏HTML文件路径
+    });
+    // 然后打开侧边栏
+    chrome.sidePanel.open({
+      tabId: sender?.tab?.id!,
+    });
+    sendResponse({ status: 'success' });
+  }
+
   if (request.action === 'openTab') {
     chrome.tabs.create({ url: chrome.runtime.getURL(request.data.url) });
     sendResponse({ status: 'success' });
   }
+
   if (request.action === 'insertSearchBox') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs.length > 0) {
