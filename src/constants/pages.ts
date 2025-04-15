@@ -26,6 +26,12 @@ export const modelOptions = [
   },
 ];
 
+export const modelTextMap = {
+  [ModelType.Deepseek_Chat]: 'deepseek-chat',
+  [ModelType.Gpt_3_5_Turbo]: 'gpt-3.5-turbo',
+  [ModelType.Moonshot_V1_8k]: 'moonshot-v1-8k',
+};
+
 export const ResponseCode = {
   SUCCESS: 200,
   ERROR: 500,

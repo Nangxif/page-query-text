@@ -32,6 +32,9 @@ dependencies:
   classnames:
     specifier: ^2.5.1
     version: registry.npmjs.org/classnames@2.5.1
+  dayjs:
+    specifier: ^1.11.13
+    version: registry.npmjs.org/dayjs@1.11.13
   dexie:
     specifier: ^4.0.11
     version: registry.npmjs.org/dexie@4.0.11
@@ -41,6 +44,9 @@ dependencies:
   openai:
     specifier: ^4.91.1
     version: registry.npmjs.org/openai@4.91.1(zod@3.24.2)
+  qs:
+    specifier: ^6.14.0
+    version: registry.npmjs.org/qs@6.14.0
   react-helmet-async:
     specifier: ^2.0.5
     version: registry.npmjs.org/react-helmet-async@2.0.5(react@18.3.1)

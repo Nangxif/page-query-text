@@ -1,9 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'openSettingSidePanel') {
+    chrome.sidePanel.setOptions({
+      enabled: true,
+      tabId: sender?.tab?.id!,
+      path: 'Sidebar.html', // 你的侧边栏HTML文件路径
+    });
     chrome.sidePanel.open({
       tabId: sender?.tab?.id!,
-      windowId: sender?.tab?.windowId!,
     });
     sendResponse({ status: 'success' });
   }

@@ -7,7 +7,17 @@ type SummaryParams = {
   content: string;
 };
 export const summaryService = async (params: SummaryParams) => {
-  return request<API.BaseResponse<{ summary: string }>>('/api/ai/ask', {
+  return request<
+    API.BaseResponse<{
+      summary: string;
+      tokenUsage: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
+      timeUsed: number;
+    }>
+  >('/api/ai/ask', {
     method: 'POST',
     data: params,
   });

@@ -295,6 +295,10 @@ async function summaryPageTextContent() {
         summary: res?.data?.summary,
         createdAt: Date.now(),
         model: config.model,
+        promptTokens: res?.data?.tokenUsage?.promptTokens,
+        completionTokens: res?.data?.tokenUsage?.completionTokens,
+        totalTokens: res?.data?.tokenUsage?.totalTokens,
+        timeUsed: res?.data?.timeUsed,
       });
 
       summaryPage = 1;
@@ -304,6 +308,18 @@ async function summaryPageTextContent() {
         'data-summary-total-page',
         summaryTotalPage.toString(),
       );
+
+      summaryResultList.unshift({
+        id: `${window.location.href}-${Date.now()}`,
+        pageUrl: window.location.href,
+        summary: res?.data?.summary,
+        createdAt: Date.now(),
+        model: config.model,
+        promptTokens: res?.data?.tokenUsage?.promptTokens,
+        completionTokens: res?.data?.tokenUsage?.completionTokens,
+        totalTokens: res?.data?.tokenUsage?.totalTokens,
+        timeUsed: res?.data?.timeUsed,
+      });
     } else {
       searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
     }
@@ -356,6 +372,10 @@ async function refreshSummaryPageTextContent() {
         summary: res?.data?.summary,
         createdAt: Date.now(),
         model: config.model,
+        promptTokens: res?.data?.tokenUsage?.promptTokens,
+        completionTokens: res?.data?.tokenUsage?.completionTokens,
+        totalTokens: res?.data?.tokenUsage?.totalTokens,
+        timeUsed: res?.data?.timeUsed,
       });
 
       summaryPage = 1;
@@ -371,6 +391,10 @@ async function refreshSummaryPageTextContent() {
         summary: res?.data?.summary,
         createdAt: Date.now(),
         model: config.model,
+        promptTokens: res?.data?.tokenUsage?.promptTokens,
+        completionTokens: res?.data?.tokenUsage?.completionTokens,
+        totalTokens: res?.data?.tokenUsage?.totalTokens,
+        timeUsed: res?.data?.timeUsed,
       });
     } else {
       searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
@@ -400,10 +424,12 @@ function openSummaryResultListSidebar() {
     (response) => {
       if (response.status === 'success') {
         console.log('侧边栏已打开');
-        chrome.runtime.sendMessage({
-          action: 'sendDataToSummaryResultListSidePanel',
-          data: { summaryResultList },
-        });
+        setTimeout(() => {
+          chrome.runtime.sendMessage({
+            action: 'sendDataToSummaryResultListSidePanel',
+            data: { summaryResultList, pageUrl: window.location.href },
+          });
+        }, 500);
       } else {
         console.error('打开侧边栏失败');
       }
