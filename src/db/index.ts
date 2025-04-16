@@ -15,10 +15,15 @@ class PageQueryTextDataBase extends Dexie {
   }
   /** 获取总结结果列表 */
   getSummaryResultList(pageUrl: string) {
-    return this.getTable(PageQueryTextDataBaseTableName.SUMMARY_RESULT_LIST)
-      .where('pageUrl')
-      .equals(pageUrl)
-      .toArray();
+    return new Promise((resolve) => {
+      this.getTable(PageQueryTextDataBaseTableName.SUMMARY_RESULT_LIST)
+        .where('pageUrl')
+        .equals(pageUrl)
+        .sortBy('createdAt')
+        .then((results) => {
+          resolve(results.reverse());
+        });
+    });
   }
 
   /** 添加总结结果 */

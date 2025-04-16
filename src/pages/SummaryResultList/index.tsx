@@ -1,11 +1,13 @@
+import { textSelectionTypeTextMap } from '@/constants/content-scripts';
 import { modelTextMap } from '@/constants/pages';
 import { SummaryResult } from '@/db/model';
 import { ModelType } from '@/types';
-import { Collapse, Empty, Timeline } from 'antd';
+import { Collapse, Empty, Tag, Timeline, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 
+const { Title } = Typography;
 const SummaryResultList = () => {
   const [list, setList] = useState<SummaryResult[]>([]);
   const [pageUrl, setPageUrl] = useState('');
@@ -23,6 +25,8 @@ const SummaryResultList = () => {
     return list.map((item) => {
       const {
         id,
+        originalText,
+        textSelectionType,
         summary,
         promptTokens,
         completionTokens,
@@ -39,9 +43,35 @@ const SummaryResultList = () => {
             items={[
               {
                 key: id,
-                label: dayjs(createdAt).format('YYYY-MM-DD HH:mm:ss'),
+                label: (
+                  <>
+                    <Tag color="#ccac85" style={{ marginLeft: '8px' }}>
+                      {textSelectionTypeTextMap[textSelectionType]}
+                    </Tag>
+                    {dayjs(createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                  </>
+                ),
                 children: (
                   <div className={styles['summary-result-list-item']}>
+                    <Title
+                      level={4}
+                      style={{
+                        marginTop: '7px',
+                      }}
+                    >
+                      原文内容
+                    </Title>
+                    <div className={styles['summary-result-list-item-content']}>
+                      {originalText}
+                    </div>
+                    <Title
+                      level={4}
+                      style={{
+                        marginTop: '7px',
+                      }}
+                    >
+                      总结
+                    </Title>
                     <div className={styles['summary-result-list-item-content']}>
                       {summary}
                     </div>

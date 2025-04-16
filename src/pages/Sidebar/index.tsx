@@ -363,7 +363,7 @@ const Sidebar: React.FC = () => {
               }
               name="apiKey"
               className={styles['form-item']}
-              tooltip="您的apiKey将会被存储在您电脑本地，不会上传至服务器"
+              tooltip="为了保障您的资金安全，您的apiKey将会被存储在您电脑本地，不会上传至服务器"
               rules={[
                 {
                   required: true,

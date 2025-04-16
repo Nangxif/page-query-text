@@ -1,3 +1,5 @@
+import { TextSelectionType } from '@/types';
+
 export const defaultConfig = {
   shortcut: ['ctrlKey', 'f'],
   // 文字高亮常用的颜色
@@ -80,3 +82,8 @@ export const codeMessage = {
   503: '服务不可用，服务器暂时过载或维护。',
   504: '网关超时。',
 } as Record<number, string>;
+
+export const textSelectionTypeTextMap = {
+  [TextSelectionType.PageText]: '全文总结',
+  [TextSelectionType.SelectionText]: '选择总结',
+};

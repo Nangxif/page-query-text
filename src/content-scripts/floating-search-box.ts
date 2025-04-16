@@ -11,8 +11,8 @@ import NextIcon from '../assets/images/next-icon.png';
 import NextPageIcon from '../assets/images/next-page-icon.png';
 import PrevIcon from '../assets/images/prev-icon.png';
 import PrevPageIcon from '../assets/images/prev-page-icon.png';
-import RefreshIcon from '../assets/images/refresh-icon.png';
 import SettingsIcon from '../assets/images/setting-icon.png';
+import SummaryIcon from '../assets/images/summary-icon.png';
 
 // 定义一个悬浮搜索框的Web Component
 class FloatingSearchBox extends HTMLElement {
@@ -245,7 +245,7 @@ class FloatingSearchBox extends HTMLElement {
       });
     };
     aiButtonBox.onclick = () => {
-      this.dispatchEvent(new CustomEvent('summary'));
+      this.dispatchEvent(new CustomEvent('opensummary'));
     };
     const aiButtonIcon = document.createElement('div');
     setStyle(aiButtonIcon, {
@@ -544,37 +544,27 @@ class FloatingSearchBox extends HTMLElement {
     titleBox.textContent = '页面内容总结';
     this.summaryContentBox.appendChild(titleBox);
 
-    const refreshSummaryBox = document.createElement('div');
-    setStyle(refreshSummaryBox, {
+    const summaryBtn = document.createElement('div');
+    setStyle(summaryBtn, {
       position: 'absolute',
       right: '25px',
       top: '3px',
       width: '16px',
       height: '16px',
       userSelect: 'none',
-      backgroundImage: `url(${RefreshIcon})`,
+      backgroundImage: `url(${SummaryIcon})`,
       backgroundSize: '100% 100%',
       cursor: 'pointer',
       zIndex: '1',
       transition: 'all 0.3s ease-out',
     });
-    refreshSummaryBox.addEventListener('mouseover', () => {
-      setStyle(refreshSummaryBox, {
-        transform: 'rotate(360deg)',
-      });
+    summaryBtn.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('summary'));
     });
-    refreshSummaryBox.addEventListener('mouseleave', () => {
-      setStyle(refreshSummaryBox, {
-        transform: 'rotate(0deg)',
-      });
-    });
-    refreshSummaryBox.addEventListener('click', () => {
-      this.dispatchEvent(new CustomEvent('refreshsummary'));
-    });
-    this.summaryContentBox.appendChild(refreshSummaryBox);
+    this.summaryContentBox.appendChild(summaryBtn);
 
-    const moreSummaryBox = document.createElement('div');
-    setStyle(moreSummaryBox, {
+    const moreSummaryBtn = document.createElement('div');
+    setStyle(moreSummaryBtn, {
       position: 'absolute',
       right: '3px',
       top: '3px',
@@ -587,10 +577,10 @@ class FloatingSearchBox extends HTMLElement {
       zIndex: '1',
       transition: 'all 0.3s ease-out',
     });
-    moreSummaryBox.addEventListener('click', () => {
+    moreSummaryBtn.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('moresummary'));
     });
-    this.summaryContentBox.appendChild(moreSummaryBox);
+    this.summaryContentBox.appendChild(moreSummaryBtn);
 
     this.summaryLoadingIcon = document.createElement('div');
     setStyle(this.summaryLoadingIcon, {

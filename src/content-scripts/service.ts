@@ -1,7 +1,7 @@
 import { ModelType } from '@/types';
 import request from '@/utils/insert-script-request';
 
-type SummaryParams = {
+export type SummaryParams = {
   model: ModelType;
   apiKey: string;
   content: string;

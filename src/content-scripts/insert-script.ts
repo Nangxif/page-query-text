@@ -23,18 +23,21 @@ import {
 } from '@/utils';
 import { FloatingSearchBoxElement } from './floating-search-box';
 import { NotificationBoxElement } from './notification-box';
-import { summaryService } from './service';
+import { SummaryParams, summaryService } from './service';
 
 // 是否打开搜索工具
 let isOpen = false;
 // 默认的配置
 let config = defaultConfig;
 const searchResultEmptyText = '无结果';
+// 搜索关键字最高亮索引
 let currentIndex = 1;
+// 搜索框
 let searchBox = null as FloatingSearchBoxElement | null;
+// 通知框
 let notificationBox = null as NotificationBoxElement | null;
+// 关注大小写
 let matchCase = MatchCaseEnum.DontMatch;
-// let matchWholeText = MatchWholeTextEnum.False;
 const textContentParentNodesMap = new Map<HTMLElement, string[]>();
 let needRenderHighlightParentNodes: {
   parentNode: HTMLElement;
@@ -151,8 +154,8 @@ function insertSearchBox() {
     searchBox.setAttribute('data-selected-content', currentSelectedContent);
   document.documentElement.appendChild(searchBox);
   searchBox.addEventListener('setting', openSetting);
-  searchBox.addEventListener('summary', summaryPageTextContent);
-  searchBox.addEventListener('refreshsummary', refreshSummaryPageTextContent);
+  searchBox.addEventListener('opensummary', openSummary);
+  searchBox.addEventListener('summary', summaryPageText);
   searchBox.addEventListener('moresummary', openSummaryResultListSidebar);
   const queryTextFn = debounceFn(queryText, 500);
   searchBox.addEventListener('search', queryTextFn);
@@ -163,10 +166,6 @@ function insertSearchBox() {
   searchBox.addEventListener('close', closeSearchBox);
   searchBox.addEventListener('summaryprev', summaryPrev);
   searchBox.addEventListener('summarynext', summaryNext);
-  notificationBox = document.createElement(
-    'notification-box',
-  ) as NotificationBoxElement;
-  document.documentElement.appendChild(notificationBox);
 }
 
 function summaryPrev() {
@@ -254,335 +253,15 @@ function searchNext() {
   });
 }
 
+// 切换关注大小写开关
 function matchCaseChange(e: any) {
   const newMatchCase = e?.detail as MatchCaseEnum;
   matchCase = newMatchCase;
   queryText(keyword);
 }
 
-async function summaryPageTextContent() {
-  searchBox?.setAttribute('data-open-summary', 'true');
-  searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loading);
-  searchBox?.setAttribute('data-summary-text-content', '');
-  // 先从db获取summaryResultList
-  summaryResultList = await pageQueryTextDataBase.getSummaryResultList(
-    window.location.href,
-  );
-  if (summaryResultList.length > 0) {
-    searchBox?.setAttribute(
-      'data-summary-text-content',
-      summaryResultList[0].summary,
-    );
-    summaryPage = 1;
-    summaryTotalPage = summaryResultList.length;
-    searchBox?.setAttribute('data-summary-page', summaryPage.toString());
-    searchBox?.setAttribute(
-      'data-summary-total-page',
-      summaryTotalPage.toString(),
-    );
-    searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
-    return;
-  }
-  // 开始总结
-  queryAllText();
-  let totalTextContent = '';
-  for (const parentNode of textContentParentNodesMap.keys()) {
-    const texts = textContentParentNodesMap.get(parentNode);
-    texts?.forEach((text) => {
-      totalTextContent += `${text}\n`;
-    });
-  }
-  if (!config?.model || !config?.apiKey) {
-    return;
-  }
-  const summaryParams = {
-    model: config.model,
-    apiKey: config.apiKey,
-    content: totalTextContent,
-  };
-  try {
-    const res = await summaryService(summaryParams);
-    if (res?.code === ResponseCode.SUCCESS) {
-      searchBox?.setAttribute('data-summary-text-content', res?.data?.summary);
-      searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
-      pageQueryTextDataBase.addSummaryResult({
-        id: `${window.location.href}-${Date.now()}`,
-        pageUrl: window.location.href,
-        summary: res?.data?.summary,
-        createdAt: Date.now(),
-        model: config.model,
-        promptTokens: res?.data?.tokenUsage?.promptTokens,
-        completionTokens: res?.data?.tokenUsage?.completionTokens,
-        totalTokens: res?.data?.tokenUsage?.totalTokens,
-        timeUsed: res?.data?.timeUsed,
-        textSelectionType: TextSelectionType.PageText,
-        originalText: totalTextContent,
-      });
-
-      summaryPage = 1;
-      summaryTotalPage = 1;
-      searchBox?.setAttribute('data-summary-page', summaryPage.toString());
-      searchBox?.setAttribute(
-        'data-summary-total-page',
-        summaryTotalPage.toString(),
-      );
-
-      summaryResultList.unshift({
-        id: `${window.location.href}-${Date.now()}`,
-        pageUrl: window.location.href,
-        summary: res?.data?.summary,
-        createdAt: Date.now(),
-        model: config.model,
-        promptTokens: res?.data?.tokenUsage?.promptTokens,
-        completionTokens: res?.data?.tokenUsage?.completionTokens,
-        totalTokens: res?.data?.tokenUsage?.totalTokens,
-        timeUsed: res?.data?.timeUsed,
-        textSelectionType: TextSelectionType.PageText,
-        originalText: totalTextContent,
-      });
-    } else {
-      searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
-    }
-  } catch {
-    searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
-    chrome.runtime.sendMessage(
-      { action: 'openTab', data: { url: 'Login.html' } },
-      (response) => {
-        if (response.status === 'success') {
-          console.log('tab已打开');
-        } else {
-          console.error('打开tab失败');
-        }
-      },
-    );
-  } finally {
-    searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
-  }
-}
-
-async function refreshSummaryPageTextContent() {
-  searchBox?.setAttribute('data-open-summary', 'true');
-  searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loading);
-  searchBox?.setAttribute('data-summary-text-content', '');
-  // 开始总结
-  queryAllText();
-  let totalTextContent = '';
-  for (const parentNode of textContentParentNodesMap.keys()) {
-    const texts = textContentParentNodesMap.get(parentNode);
-    texts?.forEach((text) => {
-      totalTextContent += `${text}\n`;
-    });
-  }
-  if (!config?.model || !config?.apiKey) {
-    return;
-  }
-  const summaryParams = {
-    model: config.model,
-    apiKey: config.apiKey,
-    content: totalTextContent,
-  };
-  try {
-    const res = await summaryService(summaryParams);
-    if (res?.code === ResponseCode.SUCCESS) {
-      searchBox?.setAttribute('data-summary-text-content', res?.data?.summary);
-      searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
-      pageQueryTextDataBase.addSummaryResult({
-        id: `${window.location.href}-${Date.now()}`,
-        pageUrl: window.location.href,
-        summary: res?.data?.summary,
-        createdAt: Date.now(),
-        model: config.model,
-        promptTokens: res?.data?.tokenUsage?.promptTokens,
-        completionTokens: res?.data?.tokenUsage?.completionTokens,
-        totalTokens: res?.data?.tokenUsage?.totalTokens,
-        timeUsed: res?.data?.timeUsed,
-        textSelectionType: TextSelectionType.PageText,
-        originalText: totalTextContent,
-      });
-
-      summaryPage = 1;
-      summaryTotalPage += 1;
-      searchBox?.setAttribute('data-summary-page', summaryPage.toString());
-      searchBox?.setAttribute(
-        'data-summary-total-page',
-        summaryTotalPage.toString(),
-      );
-      summaryResultList.unshift({
-        id: `${window.location.href}-${Date.now()}`,
-        pageUrl: window.location.href,
-        summary: res?.data?.summary,
-        createdAt: Date.now(),
-        model: config.model,
-        promptTokens: res?.data?.tokenUsage?.promptTokens,
-        completionTokens: res?.data?.tokenUsage?.completionTokens,
-        totalTokens: res?.data?.tokenUsage?.totalTokens,
-        timeUsed: res?.data?.timeUsed,
-        textSelectionType: TextSelectionType.PageText,
-        originalText: totalTextContent,
-      });
-    } else {
-      searchBox?.setAttribute(
-        'data-summary-text-content',
-        res?.message || '总结生成失败',
-      );
-      showNotification({
-        title: '总结生成失败',
-        content: res?.message || '请检查网络连接或稍后再试',
-        duration: 3000,
-        type: NotificationType.Error,
-      });
-    }
-  } catch (error) {
-    const errorData = error as ResponseError;
-    const messgae = codeMessage[errorData?.statusCode] || '总结生成失败';
-    searchBox?.setAttribute('data-summary-text-content', messgae);
-    showNotification({
-      title: '总结生成失败',
-      content: messgae,
-      duration: 0,
-      type: NotificationType.Error,
-      actionText: '前往登录',
-      actionCallback: () => {
-        chrome.runtime.sendMessage(
-          { action: 'openTab', data: { url: 'Login.html' } },
-          (response) => {
-            if (response.status === 'success') {
-              console.log('tab已打开');
-            } else {
-              console.error('打开tab失败');
-            }
-          },
-        );
-      },
-    });
-  } finally {
-    searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
-  }
-}
-
-async function summarySelectionTextContent(selectionText: string) {
-  notificationBox?.setAttribute('data-show', 'true');
-  notificationBox?.setAttribute('data-title', '提示');
-  notificationBox?.setAttribute('data-content', '正在总结...');
-  notificationBox?.setAttribute('data-duration', '0');
-  notificationBox?.setAttribute('data-type', NotificationType.Info);
-  if (!config?.model || !config?.apiKey) {
-    return;
-  }
-  const summaryParams = {
-    model: config.model,
-    apiKey: config.apiKey,
-    content: selectionText,
-  };
-  try {
-    const res = await summaryService(summaryParams);
-    if (res?.code === ResponseCode.SUCCESS) {
-      notificationBox?.setAttribute('data-show', 'false');
-      pageQueryTextDataBase.addSummaryResult({
-        id: `${window.location.href}-${Date.now()}`,
-        pageUrl: window.location.href,
-        summary: res?.data?.summary,
-        createdAt: Date.now(),
-        model: config.model,
-        promptTokens: res?.data?.tokenUsage?.promptTokens,
-        completionTokens: res?.data?.tokenUsage?.completionTokens,
-        totalTokens: res?.data?.tokenUsage?.totalTokens,
-        timeUsed: res?.data?.timeUsed,
-        textSelectionType: TextSelectionType.SelectionText,
-        originalText: selectionText,
-      });
-    }
-  } catch {
-    chrome.runtime.sendMessage(
-      { action: 'openTab', data: { url: 'Login.html' } },
-      (response) => {
-        if (response.status === 'success') {
-          console.log('tab已打开');
-        } else {
-          console.error('打开tab失败');
-        }
-      },
-    );
-  } finally {
-    notificationBox?.setAttribute('data-show', 'false');
-  }
-}
-
-function showNotification(params: {
-  title: string;
-  content: string;
-  duration: number;
-  type: NotificationType;
-  actionText?: string;
-  actionCallback?: () => void;
-}) {
-  notificationBox?.setAttribute('data-show', 'true');
-  notificationBox?.setAttribute('data-title', params.title);
-  notificationBox?.setAttribute('data-content', params.content);
-  notificationBox?.setAttribute('data-duration', params.duration.toString());
-  notificationBox?.setAttribute('data-type', params.type);
-  // 检查notificationBox里面是否有notification-action
-  if (params.actionText) {
-    const oldNotificationAction = notificationBox?.querySelector(
-      'notification-action',
-    );
-    if (oldNotificationAction) {
-      // 先清除
-      notificationBox?.removeChild(oldNotificationAction);
-    }
-    const notificationAction = document.createElement('notification-action');
-    notificationBox?.appendChild(notificationAction);
-    notificationAction.setAttribute('data-action-text', params.actionText);
-    notificationAction?.addEventListener(
-      'click',
-      params?.actionCallback || (() => void 0),
-    );
-  }
-}
-
-function openSummaryResultListSidebar() {
-  chrome.runtime.sendMessage(
-    {
-      action: 'openSummaryResultListSidePanel',
-    },
-    (response) => {
-      if (response.status === 'success') {
-        console.log('侧边栏已打开');
-        setTimeout(() => {
-          chrome.runtime.sendMessage({
-            action: 'sendDataToSummaryResultListSidePanel',
-            data: { summaryResultList, pageUrl: window.location.href },
-          });
-        }, 500);
-      } else {
-        console.error('打开侧边栏失败');
-      }
-    },
-  );
-}
-
 function openSetting() {
-  chrome.runtime.sendMessage({ action: 'openSettingSidePanel' }, (response) => {
-    if (response.status === 'success') {
-      console.log('侧边栏已打开');
-    } else {
-      console.error('打开侧边栏失败');
-    }
-  });
-}
-
-// 关闭搜索工具
-function closeSearchBox() {
-  searchBox?.remove();
-  searchBox = null;
-  textContentParentNodesMap.clear();
-  matchCase = MatchCaseEnum.DontMatch;
-  resetNeedRenderHighlightParentNodes();
-  needRenderHighlightParentNodes = [];
-  highlightNodes = [];
-  keyword = '';
-  currentIndex = 1;
-  isOpen = false;
+  chrome.runtime.sendMessage({ action: 'openSettingSidePanel' });
 }
 
 function queryText(e: any) {
@@ -784,6 +463,230 @@ function updateKeywordStyle(
   highlightNode.setAttribute('data-styles', JSON.stringify(styles));
 }
 
+// 关闭搜索工具
+function closeSearchBox() {
+  searchBox?.remove();
+  searchBox = null;
+  textContentParentNodesMap.clear();
+  matchCase = MatchCaseEnum.DontMatch;
+  resetNeedRenderHighlightParentNodes();
+  needRenderHighlightParentNodes = [];
+  highlightNodes = [];
+  keyword = '';
+  currentIndex = 1;
+  isOpen = false;
+}
+
+// 往页面插入一个通知框
+function insertNotificationBox() {
+  notificationBox = document.createElement(
+    'notification-box',
+  ) as NotificationBoxElement;
+  document.documentElement.appendChild(notificationBox);
+}
+
+function showNotification(params: {
+  title: string;
+  content: string;
+  duration: number;
+  type: NotificationType;
+  actionText?: string;
+  actionCallback?: () => void;
+}) {
+  notificationBox?.setAttribute('data-show', 'true');
+  notificationBox?.setAttribute('data-title', params.title);
+  notificationBox?.setAttribute('data-content', params.content);
+  notificationBox?.setAttribute('data-duration', params.duration.toString());
+  notificationBox?.setAttribute('data-type', params.type);
+  // 检查notificationBox里面是否有notification-action
+  if (params.actionText) {
+    const oldNotificationAction = notificationBox?.querySelector(
+      'notification-action',
+    );
+    if (oldNotificationAction) {
+      // 先清除
+      notificationBox?.removeChild(oldNotificationAction);
+    }
+    const notificationAction = document.createElement('notification-action');
+    notificationBox?.appendChild(notificationAction);
+    notificationAction.setAttribute('data-action-text', params.actionText);
+    notificationAction?.addEventListener(
+      'click',
+      params?.actionCallback || (() => void 0),
+    );
+  }
+}
+
+async function openSummary() {
+  searchBox?.setAttribute('data-open-summary', 'true');
+  searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loading);
+  searchBox?.setAttribute('data-summary-text-content', '');
+  // 先从db获取summaryResultList
+  summaryResultList = await pageQueryTextDataBase.getSummaryResultList(
+    window.location.href,
+  );
+  if (summaryResultList.length > 0) {
+    searchBox?.setAttribute(
+      'data-summary-text-content',
+      summaryResultList[0].summary,
+    );
+    summaryPage = 1;
+    summaryTotalPage = summaryResultList.length;
+    searchBox?.setAttribute('data-summary-page', summaryPage.toString());
+    searchBox?.setAttribute(
+      'data-summary-total-page',
+      summaryTotalPage.toString(),
+    );
+    searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
+    return;
+  }
+}
+
+async function beginSummary(
+  textSelectionType: TextSelectionType,
+  params: SummaryParams,
+) {
+  try {
+    const res = await summaryService(params);
+    if (res?.code === ResponseCode.SUCCESS) {
+      searchBox?.setAttribute('data-open-summary', 'true');
+      searchBox?.setAttribute('data-summary-text-content', res?.data?.summary);
+      searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
+
+      const result = {
+        id: `${window.location.href}-${Date.now()}`,
+        pageUrl: window.location.href,
+        originalText: params.content,
+        summary: res?.data?.summary,
+        createdAt: Date.now(),
+        model: params.model,
+        promptTokens: res?.data?.tokenUsage?.promptTokens,
+        completionTokens: res?.data?.tokenUsage?.completionTokens,
+        totalTokens: res?.data?.tokenUsage?.totalTokens,
+        timeUsed: res?.data?.timeUsed,
+        textSelectionType,
+      };
+      pageQueryTextDataBase.addSummaryResult(result);
+      summaryPage = 1;
+      summaryTotalPage += 1;
+      searchBox?.setAttribute('data-summary-page', summaryPage.toString());
+      searchBox?.setAttribute(
+        'data-summary-total-page',
+        summaryTotalPage.toString(),
+      );
+      summaryResultList.unshift(result);
+      if (textSelectionType === TextSelectionType.SelectionText) {
+        showNotification({
+          title: '提示',
+          content: '已完成总结',
+          duration: 0,
+          type: NotificationType.Success,
+          actionText: '前往查看',
+          actionCallback: openSummaryResultListSidebar,
+        });
+      }
+    } else {
+      searchBox?.setAttribute(
+        'data-summary-text-content',
+        res?.message || '总结生成失败',
+      );
+      showNotification({
+        title: '总结生成失败',
+        content: res?.message || '请检查网络连接或稍后再试',
+        duration: 3000,
+        type: NotificationType.Error,
+      });
+    }
+  } catch (error) {
+    const errorData = error as ResponseError;
+    const messgae = codeMessage[errorData?.statusCode] || '总结生成失败';
+    searchBox?.setAttribute('data-summary-text-content', messgae);
+    showNotification({
+      title: '总结生成失败',
+      content: messgae,
+      duration: 0,
+      type: NotificationType.Error,
+      actionText: '前往登录',
+      actionCallback: () => {
+        chrome.runtime.sendMessage(
+          { action: 'openTab', data: { url: 'Login.html' } },
+          (response) => {
+            if (response.status === 'success') {
+              console.log('tab已打开');
+            } else {
+              console.error('打开tab失败');
+            }
+          },
+        );
+      },
+    });
+  } finally {
+    searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
+  }
+}
+
+async function summaryPageText() {
+  searchBox?.setAttribute('data-open-summary', 'true');
+  searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loading);
+  searchBox?.setAttribute('data-summary-text-content', '');
+  // 获取全文文本
+  queryAllText();
+  let totalTextContent = '';
+  for (const parentNode of textContentParentNodesMap.keys()) {
+    const texts = textContentParentNodesMap.get(parentNode);
+    texts?.forEach((text) => {
+      totalTextContent += `${text}\n`;
+    });
+  }
+  if (!config?.model || !config?.apiKey) {
+    return;
+  }
+  const summaryParams = {
+    model: config.model,
+    apiKey: config.apiKey,
+    content: totalTextContent,
+  };
+  beginSummary(TextSelectionType.PageText, summaryParams);
+}
+
+async function summarySelectionText(selectionText: string) {
+  notificationBox?.setAttribute('data-show', 'true');
+  notificationBox?.setAttribute('data-title', '提示');
+  notificationBox?.setAttribute('data-content', '正在总结...');
+  notificationBox?.setAttribute('data-duration', '0');
+  notificationBox?.setAttribute('data-type', NotificationType.Info);
+  if (!config?.model || !config?.apiKey) {
+    return;
+  }
+  const summaryParams = {
+    model: config.model,
+    apiKey: config.apiKey,
+    content: selectionText,
+  };
+  beginSummary(TextSelectionType.SelectionText, summaryParams);
+}
+
+async function openSummaryResultListSidebar() {
+  summaryResultList = await pageQueryTextDataBase.getSummaryResultList(
+    window.location.href,
+  );
+  chrome.runtime.sendMessage(
+    {
+      action: 'openSummaryResultListSidePanel',
+    },
+    (response) => {
+      if (response.status === 'success') {
+        setTimeout(() => {
+          chrome.runtime.sendMessage({
+            action: 'sendDataToSummaryResultListSidePanel',
+            data: { summaryResultList, pageUrl: window.location.href },
+          });
+        }, 500);
+      }
+    },
+  );
+}
+
 window.addEventListener('load', () => {
   // 生成script
   const floatingSearchBoxScript = document.createElement('script');
@@ -811,6 +714,8 @@ window.addEventListener('load', () => {
   );
   // 将script插入至页面的html文档中，使其运行环境是网页html
   document.documentElement.appendChild(notificationBoxScript);
+
+  insertNotificationBox();
 
   // 先获取本地存储的信息
   chrome.storage.sync.get(
@@ -871,7 +776,7 @@ window.addEventListener('load', () => {
             }
           }
           if (request.action === 'summarySelection') {
-            summarySelectionTextContent(request.data.selectionText);
+            summarySelectionText(request.data.selectionText);
           }
         });
       });
