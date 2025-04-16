@@ -1,10 +1,20 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable @typescript-eslint/no-loop-func */
 /* eslint-disable @typescript-eslint/no-unused-expressions */
-import { defaultConfig, ResponseCode } from '@/constants/content-scripts';
+import {
+  codeMessage,
+  defaultConfig,
+  ResponseCode,
+} from '@/constants/content-scripts';
 import { pageQueryTextDataBase } from '@/db';
 import { SummaryResult } from '@/db/model';
-import { LoadingEnum, MatchCaseEnum } from '@/types';
+import {
+  LoadingEnum,
+  MatchCaseEnum,
+  NotificationType,
+  ResponseError,
+  TextSelectionType,
+} from '@/types';
 import {
   debounceFn,
   getTextRelatedStyles,
@@ -12,6 +22,7 @@ import {
   splitText,
 } from '@/utils';
 import { FloatingSearchBoxElement } from './floating-search-box';
+import { NotificationBoxElement } from './notification-box';
 import { summaryService } from './service';
 
 // 是否打开搜索工具
@@ -21,6 +32,7 @@ let config = defaultConfig;
 const searchResultEmptyText = '无结果';
 let currentIndex = 1;
 let searchBox = null as FloatingSearchBoxElement | null;
+let notificationBox = null as NotificationBoxElement | null;
 let matchCase = MatchCaseEnum.DontMatch;
 // let matchWholeText = MatchWholeTextEnum.False;
 const textContentParentNodesMap = new Map<HTMLElement, string[]>();
@@ -151,6 +163,10 @@ function insertSearchBox() {
   searchBox.addEventListener('close', closeSearchBox);
   searchBox.addEventListener('summaryprev', summaryPrev);
   searchBox.addEventListener('summarynext', summaryNext);
+  notificationBox = document.createElement(
+    'notification-box',
+  ) as NotificationBoxElement;
+  document.documentElement.appendChild(notificationBox);
 }
 
 function summaryPrev() {
@@ -299,6 +315,8 @@ async function summaryPageTextContent() {
         completionTokens: res?.data?.tokenUsage?.completionTokens,
         totalTokens: res?.data?.tokenUsage?.totalTokens,
         timeUsed: res?.data?.timeUsed,
+        textSelectionType: TextSelectionType.PageText,
+        originalText: totalTextContent,
       });
 
       summaryPage = 1;
@@ -319,6 +337,8 @@ async function summaryPageTextContent() {
         completionTokens: res?.data?.tokenUsage?.completionTokens,
         totalTokens: res?.data?.tokenUsage?.totalTokens,
         timeUsed: res?.data?.timeUsed,
+        textSelectionType: TextSelectionType.PageText,
+        originalText: totalTextContent,
       });
     } else {
       searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
@@ -376,6 +396,8 @@ async function refreshSummaryPageTextContent() {
         completionTokens: res?.data?.tokenUsage?.completionTokens,
         totalTokens: res?.data?.tokenUsage?.totalTokens,
         timeUsed: res?.data?.timeUsed,
+        textSelectionType: TextSelectionType.PageText,
+        originalText: totalTextContent,
       });
 
       summaryPage = 1;
@@ -395,12 +417,82 @@ async function refreshSummaryPageTextContent() {
         completionTokens: res?.data?.tokenUsage?.completionTokens,
         totalTokens: res?.data?.tokenUsage?.totalTokens,
         timeUsed: res?.data?.timeUsed,
+        textSelectionType: TextSelectionType.PageText,
+        originalText: totalTextContent,
       });
     } else {
-      searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
+      searchBox?.setAttribute(
+        'data-summary-text-content',
+        res?.message || '总结生成失败',
+      );
+      showNotification({
+        title: '总结生成失败',
+        content: res?.message || '请检查网络连接或稍后再试',
+        duration: 3000,
+        type: NotificationType.Error,
+      });
+    }
+  } catch (error) {
+    const errorData = error as ResponseError;
+    const messgae = codeMessage[errorData?.statusCode] || '总结生成失败';
+    searchBox?.setAttribute('data-summary-text-content', messgae);
+    showNotification({
+      title: '总结生成失败',
+      content: messgae,
+      duration: 0,
+      type: NotificationType.Error,
+      actionText: '前往登录',
+      actionCallback: () => {
+        chrome.runtime.sendMessage(
+          { action: 'openTab', data: { url: 'Login.html' } },
+          (response) => {
+            if (response.status === 'success') {
+              console.log('tab已打开');
+            } else {
+              console.error('打开tab失败');
+            }
+          },
+        );
+      },
+    });
+  } finally {
+    searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
+  }
+}
+
+async function summarySelectionTextContent(selectionText: string) {
+  notificationBox?.setAttribute('data-show', 'true');
+  notificationBox?.setAttribute('data-title', '提示');
+  notificationBox?.setAttribute('data-content', '正在总结...');
+  notificationBox?.setAttribute('data-duration', '0');
+  notificationBox?.setAttribute('data-type', NotificationType.Info);
+  if (!config?.model || !config?.apiKey) {
+    return;
+  }
+  const summaryParams = {
+    model: config.model,
+    apiKey: config.apiKey,
+    content: selectionText,
+  };
+  try {
+    const res = await summaryService(summaryParams);
+    if (res?.code === ResponseCode.SUCCESS) {
+      notificationBox?.setAttribute('data-show', 'false');
+      pageQueryTextDataBase.addSummaryResult({
+        id: `${window.location.href}-${Date.now()}`,
+        pageUrl: window.location.href,
+        summary: res?.data?.summary,
+        createdAt: Date.now(),
+        model: config.model,
+        promptTokens: res?.data?.tokenUsage?.promptTokens,
+        completionTokens: res?.data?.tokenUsage?.completionTokens,
+        totalTokens: res?.data?.tokenUsage?.totalTokens,
+        timeUsed: res?.data?.timeUsed,
+        textSelectionType: TextSelectionType.SelectionText,
+        originalText: selectionText,
+      });
     }
   } catch {
-    searchBox?.setAttribute('data-summary-text-content', '总结生成失败');
     chrome.runtime.sendMessage(
       { action: 'openTab', data: { url: 'Login.html' } },
       (response) => {
@@ -412,7 +504,39 @@ async function refreshSummaryPageTextContent() {
       },
     );
   } finally {
-    searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loaded);
+    notificationBox?.setAttribute('data-show', 'false');
+  }
+}
+
+function showNotification(params: {
+  title: string;
+  content: string;
+  duration: number;
+  type: NotificationType;
+  actionText?: string;
+  actionCallback?: () => void;
+}) {
+  notificationBox?.setAttribute('data-show', 'true');
+  notificationBox?.setAttribute('data-title', params.title);
+  notificationBox?.setAttribute('data-content', params.content);
+  notificationBox?.setAttribute('data-duration', params.duration.toString());
+  notificationBox?.setAttribute('data-type', params.type);
+  // 检查notificationBox里面是否有notification-action
+  if (params.actionText) {
+    const oldNotificationAction = notificationBox?.querySelector(
+      'notification-action',
+    );
+    if (oldNotificationAction) {
+      // 先清除
+      notificationBox?.removeChild(oldNotificationAction);
+    }
+    const notificationAction = document.createElement('notification-action');
+    notificationBox?.appendChild(notificationAction);
+    notificationAction.setAttribute('data-action-text', params.actionText);
+    notificationAction?.addEventListener(
+      'click',
+      params?.actionCallback || (() => void 0),
+    );
   }
 }
 
@@ -679,6 +803,15 @@ window.addEventListener('load', () => {
   // 将script插入至页面的html文档中，使其运行环境是网页html
   document.documentElement.appendChild(highlightBoxScript);
 
+  // 生成script
+  const notificationBoxScript = document.createElement('script');
+  // 使用chrome.runtime.getURL生成url
+  notificationBoxScript.src = chrome.runtime.getURL(
+    'content-scripts/notification-box.js', // 注意：这里的路径也是基于插件项目根目录的路径
+  );
+  // 将script插入至页面的html文档中，使其运行环境是网页html
+  document.documentElement.appendChild(notificationBoxScript);
+
   // 先获取本地存储的信息
   chrome.storage.sync.get(
     [
@@ -736,6 +869,9 @@ window.addEventListener('load', () => {
             } else {
               updateSearchContent();
             }
+          }
+          if (request.action === 'summarySelection') {
+            summarySelectionTextContent(request.data.selectionText);
           }
         });
       });

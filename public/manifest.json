@@ -18,12 +18,13 @@
       "resources": [
         "content-scripts/floating-search-box.js",
         "content-scripts/highlight-box.js",
+        "content-scripts/notification-box.js",
         "Login.html",
         "UserInfo.html"
       ]
     }
   ],
-  "permissions": ["sidePanel", "storage"],
+  "permissions": ["sidePanel", "storage", "contextMenus"],
   "side_panel": {
     "default_path": "Sidebar.html",
     "default_title": "设置面板"

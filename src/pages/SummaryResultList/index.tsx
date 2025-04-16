@@ -1,7 +1,7 @@
 import { modelTextMap } from '@/constants/pages';
 import { SummaryResult } from '@/db/model';
 import { ModelType } from '@/types';
-import { Collapse, Timeline } from 'antd';
+import { Collapse, Empty, Timeline } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
@@ -65,11 +65,20 @@ const SummaryResultList = () => {
   }, [list]);
   return (
     <div className={styles['summary-result-list']}>
-      <div className={styles['summary-result-list-header']}>历史总结结果</div>
+      <div className={styles['summary-result-list-header']}>
+        历史总结结果（{list?.length}）
+      </div>
       <div className={styles['summary-result-list-page-url']}>
         相关页面地址：{pageUrl}
       </div>
-      <Timeline items={items} />
+      {items?.length > 0 ? (
+        <Timeline items={items} />
+      ) : (
+        <Empty
+          description="暂无总结结果"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      )}
     </div>
   );
 };

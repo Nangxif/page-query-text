@@ -38,3 +38,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
   }
 });
+
+chrome.runtime.onInstalled.addListener(() => {
+  // 创建一个简单的菜单项
+  console.log('onInstalled');
+  chrome.contextMenus.create({
+    id: 'summarySelection',
+    title: '总结选中的文本',
+    contexts: ['selection'], // 只在有文本被选中时显示
+  });
+});
+
+// 添加菜单点击事件监听器
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === 'summarySelection' && info.selectionText) {
+    console.log('选中的文本:', info.selectionText);
+    // 这里可以处理选中的文本，例如发送消息到内容脚本
+    chrome.tabs.sendMessage(tab?.id!, {
+      action: 'summarySelection',
+      data: {
+        selectionText: info.selectionText,
+      },
+    });
+  }
+});
