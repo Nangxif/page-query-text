@@ -14,7 +14,7 @@ class PageQueryTextDataBase extends Dexie {
     return (this as any)[tableName] as Table<T>;
   }
   /** 获取总结结果列表 */
-  getSummaryResultList(pageUrl: string) {
+  getSummaryResultList(pageUrl: string): Promise<SummaryResult[]> {
     return new Promise((resolve) => {
       this.getTable(PageQueryTextDataBaseTableName.SUMMARY_RESULT_LIST)
         .where('pageUrl')

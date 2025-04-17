@@ -522,9 +522,9 @@ async function openSummary() {
   searchBox?.setAttribute('data-summary-loading', LoadingEnum.Loading);
   searchBox?.setAttribute('data-summary-text-content', '');
   // 先从db获取summaryResultList
-  summaryResultList = await pageQueryTextDataBase.getSummaryResultList(
+  summaryResultList = (await pageQueryTextDataBase.getSummaryResultList(
     window.location.href,
-  );
+  )) as SummaryResult[];
   if (summaryResultList.length > 0) {
     searchBox?.setAttribute(
       'data-summary-text-content',
@@ -667,9 +667,9 @@ async function summarySelectionText(selectionText: string) {
 }
 
 async function openSummaryResultListSidebar() {
-  summaryResultList = await pageQueryTextDataBase.getSummaryResultList(
+  summaryResultList = (await pageQueryTextDataBase.getSummaryResultList(
     window.location.href,
-  );
+  )) as SummaryResult[];
   chrome.runtime.sendMessage(
     {
       action: 'openSummaryResultListSidePanel',
