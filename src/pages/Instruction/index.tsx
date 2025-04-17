@@ -228,7 +228,7 @@ const Instruction = () => {
         type="link"
         className={styles['return-btn']}
         onClick={() => {
-          window.location.href = '/Sidebar.html';
+          window.location.href = '/Setting.html';
         }}
       >
         返回设置页面

@@ -565,6 +565,10 @@ async function beginSummary(
         totalTokens: res?.data?.tokenUsage?.totalTokens,
         timeUsed: res?.data?.timeUsed,
         textSelectionType,
+        temperature: params.temperature,
+        maxTokens: params.maxTokens,
+        systemPrompt: params.systemPrompt,
+        userPrompt: params.userPrompt,
       };
       pageQueryTextDataBase.addSummaryResult(result);
       summaryPage = 1;
@@ -645,6 +649,8 @@ async function summaryPageText() {
     model: config.model,
     apiKey: config.apiKey,
     content: totalTextContent,
+    systemPrompt: config.systemPrompt,
+    userPrompt: config.userPrompt,
   };
   beginSummary(TextSelectionType.PageText, summaryParams);
 }
@@ -662,6 +668,8 @@ async function summarySelectionText(selectionText: string) {
     model: config.model,
     apiKey: config.apiKey,
     content: selectionText,
+    systemPrompt: config.systemPrompt,
+    userPrompt: config.userPrompt,
   };
   beginSummary(TextSelectionType.SelectionText, summaryParams);
 }
@@ -728,6 +736,10 @@ window.addEventListener('load', () => {
       'fixed',
       'model',
       'apiKey',
+      'systemPrompt',
+      'userPrompt',
+      'temperature',
+      'maxTokens',
     ],
     (syncConfig) => {
       chrome.storage.local.get(['startX', 'startY'], (localConfig) => {

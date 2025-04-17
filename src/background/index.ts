@@ -4,7 +4,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.sidePanel.setOptions({
       enabled: true,
       tabId: sender?.tab?.id!,
-      path: 'Sidebar.html', // 你的侧边栏HTML文件路径
+      path: 'Setting.html', // 你的侧边栏HTML文件路径
     });
     chrome.sidePanel.open({
       tabId: sender?.tab?.id!,

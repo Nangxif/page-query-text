@@ -12,6 +12,10 @@ export const defaultConfig = {
   startY: 0,
   model: undefined,
   apiKey: undefined,
+  systemPrompt: undefined,
+  userPrompt: undefined,
+  temperature: undefined,
+  maxTokens: undefined,
 };
 
 export const textStyleProperties = [

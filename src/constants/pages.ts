@@ -13,23 +13,44 @@ export const modelOptions = [
     label: 'deepseek-chat',
     value: ModelType.Deepseek_Chat,
     apiKeyApplyUrl: 'https://platform.deepseek.com/api_keys',
-  },
-  {
-    label: 'gpt-3.5-turbo',
-    value: ModelType.Gpt_3_5_Turbo,
-    apiKeyApplyUrl: 'https://platform.openai.com/api-keys',
+    minTemperature: 0.01,
+    maxTemperature: 2,
+    temperatureStep: 0.01,
+    defaultTemperature: 0.3,
+    minTokens: 1,
+    maxTokens: 4096,
+    defaultTokens: 1000,
   },
   {
     label: 'moonshot-v1-8k',
     value: ModelType.Moonshot_V1_8k,
     apiKeyApplyUrl: 'https://platform.moonshot.cn/console/api-keys',
+    minTemperature: 0.01,
+    maxTemperature: 2,
+    temperatureStep: 0.01,
+    defaultTemperature: 0.3,
+    minTokens: 1,
+    maxTokens: 8192,
+    defaultTokens: 1000,
+  },
+  {
+    label: 'moonshot-v1-32k',
+    value: ModelType.Moonshot_V1_32k,
+    apiKeyApplyUrl: 'https://platform.moonshot.cn/console/api-keys',
+    minTemperature: 0.01,
+    maxTemperature: 2,
+    temperatureStep: 0.01,
+    defaultTemperature: 0.3,
+    minTokens: 1,
+    maxTokens: 32768,
+    defaultTokens: 1000,
   },
 ];
 
 export const modelTextMap = {
   [ModelType.Deepseek_Chat]: 'deepseek-chat',
-  [ModelType.Gpt_3_5_Turbo]: 'gpt-3.5-turbo',
   [ModelType.Moonshot_V1_8k]: 'moonshot-v1-8k',
+  [ModelType.Moonshot_V1_32k]: 'moonshot-v1-32k',
 };
 
 export const ResponseCode = {

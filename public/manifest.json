@@ -26,7 +26,7 @@
   ],
   "permissions": ["sidePanel", "storage", "contextMenus"],
   "side_panel": {
-    "default_path": "Sidebar.html",
+    "default_path": "Setting.html",
     "default_title": "设置面板"
   },
   "icons": {

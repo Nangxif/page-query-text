@@ -5,6 +5,7 @@ import { ModelType } from '@/types';
 import { Collapse, Empty, Tag, Timeline, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import styles from './index.less';
 
 const { Title } = Typography;
@@ -94,22 +95,27 @@ const SummaryResultList = () => {
     });
   }, [list]);
   return (
-    <div className={styles['summary-result-list']}>
-      <div className={styles['summary-result-list-header']}>
-        历史总结结果（{list?.length}）
+    <>
+      <Helmet>
+        <title>历史总结结果</title>
+      </Helmet>
+      <div className={styles['summary-result-list']}>
+        <div className={styles['summary-result-list-header']}>
+          历史总结结果（{list?.length}）
+        </div>
+        <div className={styles['summary-result-list-page-url']}>
+          相关页面地址：{pageUrl}
+        </div>
+        {items?.length > 0 ? (
+          <Timeline items={items} />
+        ) : (
+          <Empty
+            description="暂无总结结果"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        )}
       </div>
-      <div className={styles['summary-result-list-page-url']}>
-        相关页面地址：{pageUrl}
-      </div>
-      {items?.length > 0 ? (
-        <Timeline items={items} />
-      ) : (
-        <Empty
-          description="暂无总结结果"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
-      )}
-    </div>
+    </>
   );
 };
 export default SummaryResultList;

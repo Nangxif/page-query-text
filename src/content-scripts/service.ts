@@ -5,6 +5,10 @@ export type SummaryParams = {
   model: ModelType;
   apiKey: string;
   content: string;
+  systemPrompt?: string;
+  userPrompt?: string;
+  temperature?: number;
+  maxTokens?: number;
 };
 export const summaryService = async (params: SummaryParams) => {
   return request<

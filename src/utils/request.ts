@@ -23,11 +23,11 @@ instance.interceptors.response.use(
   },
   (error) => {
     if (error?.response?.status === 401) {
-      if (window.location.pathname !== '/Sidebar.html') {
+      if (window.location.pathname !== '/Setting.html') {
         window.location.href = '/Login.html';
       }
     }
-    if (window.location.pathname !== '/Sidebar.html') {
+    if (window.location.pathname !== '/Setting.html') {
       notification.error({
         message: '请求失败',
         description: error?.message,
