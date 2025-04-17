@@ -25,6 +25,7 @@
     "antd": "^5.4.0",
     "axios": "^1.8.4",
     "classnames": "^2.5.1",
+    "copy-to-clipboard": "^3.3.3",
     "dayjs": "^1.11.13",
     "dexie": "^4.0.11",
     "js-cookie": "^3.0.5",

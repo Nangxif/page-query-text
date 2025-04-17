@@ -2,7 +2,7 @@ import { textSelectionTypeTextMap } from '@/constants/content-scripts';
 import { modelTextMap } from '@/constants/pages';
 import { SummaryResult } from '@/db/model';
 import { ModelType } from '@/types';
-import { Collapse, Empty, Tag, Timeline, Typography } from 'antd';
+import { Collapse, Descriptions, Empty, Tag, Timeline, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -27,6 +27,10 @@ const SummaryResultList = () => {
       const {
         id,
         originalText,
+        temperature,
+        maxTokens,
+        systemPrompt,
+        userPrompt,
         textSelectionType,
         summary,
         promptTokens,
@@ -71,20 +75,80 @@ const SummaryResultList = () => {
                         marginTop: '7px',
                       }}
                     >
+                      AI总结参数
+                    </Title>
+
+                    <Descriptions
+                      title={null}
+                      bordered
+                      size="small"
+                      items={[
+                        {
+                          label: '模型',
+                          children: modelTextMap[model as ModelType],
+                        },
+                        {
+                          label: '系统提示词',
+                          children: systemPrompt || '采用默认系统提示词',
+                        },
+                        {
+                          label: '用户提示词',
+                          children: userPrompt || '采用默认用户提示词',
+                        },
+                        {
+                          label: '随机性',
+                          children: temperature,
+                        },
+                        {
+                          label: '最大Tokens',
+                          children: maxTokens,
+                        },
+                      ]}
+                    />
+
+                    <Title
+                      level={4}
+                      style={{
+                        marginTop: '7px',
+                      }}
+                    >
                       总结
                     </Title>
                     <div className={styles['summary-result-list-item-content']}>
                       {summary}
                     </div>
-                    <div className={styles['summary-result-list-item-model']}>
-                      模型：{modelTextMap[model as ModelType]}
-                    </div>
-                    <div className={styles['summary-result-list-item-info']}>
-                      <span>输入Tokens: {promptTokens}</span>
-                      <span>输出Tokens: {completionTokens}</span>
-                      <span>总Tokens: {totalTokens}</span>
-                      <span>耗时: {timeUsed}ms</span>
-                    </div>
+                    <Title
+                      level={4}
+                      style={{
+                        marginTop: '7px',
+                      }}
+                    >
+                      模型输出参数
+                    </Title>
+
+                    <Descriptions
+                      title={null}
+                      bordered
+                      size="small"
+                      items={[
+                        {
+                          label: '输入Tokens',
+                          children: promptTokens,
+                        },
+                        {
+                          label: '输出Tokens',
+                          children: completionTokens,
+                        },
+                        {
+                          label: '总Tokens',
+                          children: totalTokens,
+                        },
+                        {
+                          label: '耗时',
+                          children: timeUsed,
+                        },
+                      ]}
+                    />
                   </div>
                 ),
               },

@@ -32,6 +32,9 @@ dependencies:
   classnames:
     specifier: ^2.5.1
     version: registry.npmjs.org/classnames@2.5.1
+  copy-to-clipboard:
+    specifier: ^3.3.3
+    version: registry.npmjs.org/copy-to-clipboard@3.3.3
   dayjs:
     specifier: ^1.11.13
     version: registry.npmjs.org/dayjs@1.11.13

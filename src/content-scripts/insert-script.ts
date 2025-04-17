@@ -651,6 +651,8 @@ async function summaryPageText() {
     content: totalTextContent,
     systemPrompt: config.systemPrompt,
     userPrompt: config.userPrompt,
+    temperature: config.temperature,
+    maxTokens: config.maxTokens,
   };
   beginSummary(TextSelectionType.PageText, summaryParams);
 }
@@ -670,6 +672,8 @@ async function summarySelectionText(selectionText: string) {
     content: selectionText,
     systemPrompt: config.systemPrompt,
     userPrompt: config.userPrompt,
+    temperature: config.temperature,
+    maxTokens: config.maxTokens,
   };
   beginSummary(TextSelectionType.SelectionText, summaryParams);
 }

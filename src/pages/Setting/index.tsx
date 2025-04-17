@@ -4,6 +4,7 @@ import { ModelType } from '@/types';
 import { formatColor } from '@/utils';
 import { useRequest } from 'ahooks';
 import {
+  Alert,
   Button,
   Card,
   ColorPicker,
@@ -20,7 +21,11 @@ import {
 } from 'antd';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { getPayApplyInfoService, PaymentStatus } from '../UserInfo/service';
+import {
+  getPaymentApplyInfoService,
+  getRemainTimesService,
+  PaymentStatus,
+} from '../UserInfo/service';
 import ShortcutPicker, { specialKeys } from './ShortcutPicker';
 import styles from './index.less';
 
@@ -65,10 +70,10 @@ const Setting: React.FC = () => {
   const [advancedForm] = useForm<AdvancedFormValues>();
   const [selectedSetting, setSelectedSetting] = useState(SettingType.NORMAL);
 
-  const { data, run: getPayApplyInfo } = useRequest(
+  const { data: paymentApplyInfo, run: getPaymentApplyInfo } = useRequest(
     async () => {
       try {
-        const res = await getPayApplyInfoService();
+        const res = await getPaymentApplyInfoService();
         return res?.data;
       } catch {
         message.warning('此功能需登录后才能使用');
@@ -77,6 +82,14 @@ const Setting: React.FC = () => {
     {
       manual: true,
     },
+  );
+
+  const { data: remainTimes, run: getRemainTimes } = useRequest(
+    async () => {
+      const res = await getRemainTimesService();
+      return res?.data;
+    },
+    { manual: true },
   );
 
   // 初始化数据
@@ -96,7 +109,8 @@ const Setting: React.FC = () => {
         },
       );
     } else if (selectedSetting === SettingType.ADVANCED) {
-      getPayApplyInfo();
+      getPaymentApplyInfo();
+      getRemainTimes();
       chrome?.storage?.sync?.get(
         [
           'model',
@@ -141,6 +155,7 @@ const Setting: React.FC = () => {
           bgColor: defaultConfig.bgColor,
           selectedColor: defaultConfig.selectedColor,
           selectedBgColor: defaultConfig.selectedBgColor,
+          fixed: defaultConfig.fixed,
         });
         message.success('重置成功，刷新页面之后配置才可生效');
       },
@@ -341,8 +356,9 @@ const Setting: React.FC = () => {
         )}
 
         {selectedSetting === SettingType.ADVANCED &&
-          data &&
-          data?.paymentStatus === PaymentStatus.REVIEWED && (
+          ((paymentApplyInfo &&
+            paymentApplyInfo?.paymentStatus === PaymentStatus.PASS) ||
+            (remainTimes !== undefined && remainTimes <= 10)) && (
             <Form
               form={advancedForm}
               layout="vertical"
@@ -359,6 +375,14 @@ const Setting: React.FC = () => {
                 }
               }}
             >
+              <Alert
+                showIcon
+                message={`Page Toolkit剩余使用次数：${remainTimes}`}
+                type="info"
+                style={{
+                  marginBottom: '24px',
+                }}
+              />
               <FormItem
                 label="模型"
                 name="model"
@@ -534,6 +558,7 @@ const Setting: React.FC = () => {
                           min={minTokens}
                           max={maxTokens}
                           precision={0}
+                          placeholder="请输入"
                         />
                       </FormItem>
                     </>
@@ -566,7 +591,7 @@ const Setting: React.FC = () => {
             </Form>
           )}
 
-        {selectedSetting === SettingType.ADVANCED && !data && (
+        {selectedSetting === SettingType.ADVANCED && !paymentApplyInfo && (
           <Result
             status="403"
             subTitle="此功能需登录后才能使用"
@@ -586,11 +611,13 @@ const Setting: React.FC = () => {
         )}
 
         {selectedSetting === SettingType.ADVANCED &&
-          data &&
-          data.paymentStatus !== PaymentStatus.REVIEWED && (
+          paymentApplyInfo &&
+          paymentApplyInfo.paymentStatus !== PaymentStatus.PASS &&
+          remainTimes !== undefined &&
+          remainTimes === 0 && (
             <Result
               status="403"
-              subTitle="此功能需购买才能使用"
+              subTitle="已超过最大使用次数，此功能需购买才能使用"
               extra={
                 <Button
                   type="primary"
